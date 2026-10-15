@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Neon Nocturn</title>
+<meta name="description" content="Un oraș cyberpunk în pixel art, conectat la ora și vremea reală de la tine.">
+<meta name="theme-color" content="#07060c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%2307060c'/%3E%3Crect x='2' y='6' width='4' height='10' fill='%231b1233'/%3E%3Crect x='7' y='3' width='4' height='13' fill='%23130c24'/%3E%3Crect x='12' y='8' width='3' height='8' fill='%231b1233'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23ffc977'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%235ef2ff'/%3E%3Crect x='3' y='9' width='1' height='1' fill='%23ff4fd8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--fg:#ece6ff;--dim:#a99fcf;--acc:#5ef2ff;--acc2:#ff4fd8;--panel:rgba(11,8,22,.78);--line:rgba(160,130,255,.22)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#07060c;overflow:hidden;color:var(--fg);font-family:"VT323",ui-monospace,Menlo,Consolas,monospace}
+canvas#c{position:fixed;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 75% at 50% 42%,transparent 60%,rgba(0,0,0,.42) 100%)}
+.ui{transition:opacity .8s ease}
+body.idle .ui{opacity:0;pointer-events:none}
+body.idle{cursor:none}
+body.nohud .ui{display:none}
+#hud{position:fixed;left:max(22px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));pointer-events:none;text-shadow:0 0 10px rgba(94,242,255,.35),0 2px 0 rgba(0,0,0,.6)}
+#clock{font-size:clamp(44px,7vw,72px);line-height:.9;letter-spacing:1px}
+#place{font-size:22px;color:var(--dim);margin-top:4px}
+#wx{font-size:22px;margin-top:2px}
+#wx b{color:var(--acc);font-weight:normal}
+#tag{font-size:16px;color:var(--acc2);margin-top:6px;opacity:.85;min-height:16px}
+#btns{position:fixed;right:max(18px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px}
+#btns button{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#btns button:hover,#btns button[aria-pressed=true]{border-color:var(--acc);color:var(--acc);box-shadow:0 0 12px rgba(94,242,255,.25)}
+#btns svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:square}
+#panel{position:fixed;right:max(18px,env(safe-area-inset-right));top:calc(max(16px,env(safe-area-inset-top)) + 50px);width:min(300px,calc(100vw - 36px));background:var(--panel);border:1px solid var(--line);padding:14px 16px 12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:20px;display:none}
+#panel.open{display:block}
+#panel h3{margin:0 0 6px;font-size:16px;font-weight:normal;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+#panel section{margin-bottom:14px}
+.seg{display:flex;border:1px solid var(--line)}
+.seg button{flex:1;background:transparent;border:0;color:var(--dim);font:inherit;padding:4px 0;cursor:pointer}
+.seg button.on{background:rgba(94,242,255,.12);color:var(--acc)}
+input[type=range]{width:100%;accent-color:var(--acc);margin:8px 0 2px}
+.row{display:flex;gap:6px;align-items:center}
+select,input[type=text]{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--fg);font:inherit;padding:3px 6px;outline:none}
+select:focus,input[type=text]:focus{border-color:var(--acc)}
+.btn{background:transparent;border:1px solid var(--line);color:var(--fg);font:inherit;padding:3px 10px;cursor:pointer}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+label.chk{display:flex;gap:8px;align-items:center;cursor:pointer;color:var(--dim)}
+label.chk input{accent-color:var(--acc2)}
+#mh{color:var(--acc)}
+#status,#keys{font-size:15px;color:var(--dim);line-height:1.15}
+#keys{margin-top:6px;opacity:.75}
+@media (max-width:520px){#place,#wx{font-size:19px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vig"></div>
+
+<div id="hud" class="ui">
+  <div id="clock">--:--</div>
+  <div id="place">…</div>
+  <div id="wx">…</div>
+  <div id="tag"></div>
+</div>
+
+<div id="btns" class="ui">
+  <button id="bSound" title="Sunet (S)" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path id="sw" d="M17 9c1.5 1.5 1.5 4.5 0 6M19.5 6.5c3 3 3 8 0 11"/></svg></button>
+  <button id="bFull" title="Ecran complet (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+  <button id="bPanel" title="Setări (D)" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><path d="M14 5v4M18 5v4M6 15v4M10 15v4"/></svg></button>
+</div>
+
+<div id="panel" class="ui">
+  <section>
+    <h3>Timp</h3>
+    <div class="seg"><button id="tLive" class="on">Live</button><button id="tMan">Manual</button></div>
+    <input id="tSlider" type="range" min="0" max="24" step="0.05" value="22">
+    <div class="row" style="justify-content:space-between"><span id="mh">22:00</span>
+    <label class="chk"><input id="tLapse" type="checkbox"> Timelapse</label></div>
+  </section>
+  <section>
+    <h3>Vreme</h3>
+    <select id="wSel">
+      <option value="live">Live (Open-Meteo)</option>
+      <option value="clear">Senin</option>
+      <option value="partly">Parțial noros</option>
+      <option value="cloudy">Înnorat</option>
+      <option value="fog">Ceață</option>
+      <option value="drizzle">Burniță</option>
+      <option value="rain">Ploaie</option>
+      <option value="storm">Furtună</option>
+      <option value="snow">Ninsoare</option>
+    </select>
+  </section>
+  <section>
+    <h3>Locație</h3>
+    <form id="cityForm" class="row"><input id="cityIn" type="text" placeholder="Oraș (ex. Tokyo)" autocomplete="off"><button class="btn" type="submit">Caută</button></form>
+    <div class="row" style="margin-top:6px"><button id="bGeo" class="btn" type="button" style="flex:1">Folosește locația mea</button></div>
+  </section>
+  <div id="status">Se încarcă vremea…</div>
+  <div id="keys">H interfață · S sunet · F ecran complet · D setări</div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ───────────── utilitare ───────────── */
+const P = new URLSearchParams(location.search);
+const clamp = (v, a = 0, b = 1) => v < a ? a : v > b ? b : v;
+const sm = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const pad = n => String(n).padStart(2, '0');
+const fmtH = h => { h = ((h % 24) + 24) % 24; const m = Math.floor(h * 60 + 1e-6); return pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60); };
+function rngOf(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+function mk(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return [c, c.getContext('2d')]; }
+
+/* ───────────── font pixel 3×5 ───────────── */
+const FONT = {
+  A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',
+  F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',
+  K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',
+  P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',
+  U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',
+  Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110',
+  '4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111',
+  '9':'111101111001110',' ':'000000000000000',':':'000010000010000','-':'000000111000000','.':'000000000000010',
+  '°':'010101010000000','+':'000010111010000','/':'001001010100100'
+};
+const textW = (s, k = 1) => s.length * 4 * k - k;
+function drawText(c, s, x, y, k, col) {
+  c.fillStyle = col;
+  for (let i = 0; i < s.length; i++) {
+    const g = FONT[s[i]]; if (!g) continue;
+    for (let j = 0; j < 15; j++) if (g.charCodeAt(j) === 49) c.fillRect(x + (i * 4 + j % 3) * k, y + ((j / 3) | 0) * k, k, k);
+  }
+}
+const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9 :\-.°+/]/g, '');
+
+/* ───────────── paletă ───────────── */
+const NEON = ['#5ef2ff', '#ff4fd8', '#ffd34f', '#7dff8a', '#ff5a6e', '#b07bff'].map(hex);
+const WINC = { home: hex('#ffc46e'), home2: hex('#ffe0a3'), cool: hex('#bfefff'), mag: hex('#ff8ae2'), office: hex('#d9f1ff'), always: hex('#ffe9b8'), tv: hex('#7fb6ff') };
+const WORDS = ['BAR', 'HOTEL', 'RAMEN', '24H', 'OPEN', 'NOODLE', 'CAFE', 'CLUB', 'NONSTOP', 'FARMACIE', 'TAXI', 'SUSHI', 'ARCADE', 'NEO', 'PIZZA', 'KARAOKE', 'MOTEL', 'LIVE', 'KEBAB', 'BAZAR', 'DISCO', 'VINIL'];
+const SKY = {
+  night: { top: hex('#040310'), mid: hex('#0f0824'), hor: hex('#34113f') },
+  day:   { top: hex('#4f86b8'), mid: hex('#93b6cf'), hor: hex('#dcd2bf') },
+  tw:    { top: hex('#231a4d'), mid: hex('#7a3270'), hor: hex('#ff7a45') },
+  ovN:   { top: hex('#0c0a17'), mid: hex('#1a1226'), hor: hex('#3d1a42') },
+  ovD:   { top: hex('#5e6672'), mid: hex('#7e8590'), hor: hex('#a3a7ad') },
+  fogN: hex('#2e2539'), fogD: hex('#bdbcc2')
+};
+
+/* ───────────── vreme ───────────── */
+const WX = {
+  clear:   { label: 'Senin', word: 'SENIN', cloud: .05, rain: 0, snow: 0, fog: 0, storm: 0 },
+  partly:  { label: 'Parțial noros', word: 'NOROS', cloud: .42, rain: 0, snow: 0, fog: 0, storm: 0 },
+  cloudy:  { label: 'Înnorat', word: 'INNORAT', cloud: .9, rain: 0, snow: 0, fog: 0, storm: 0 },
+  fog:     { label: 'Ceață', word: 'CEATA', cloud: .7, rain: 0, snow: 0, fog: .85, storm: 0 },
+  drizzle: { label: 'Burniță', word: 'BURNITA', cloud: .85, rain: .3, snow: 0, fog: .15, storm: 0 },
+  rain:    { label: 'Ploaie', word: 'PLOAIE', cloud: .95, rain: .7, snow: 0, fog: .1, storm: 0 },
+  storm:   { label: 'Furtună', word: 'FURTUNA', cloud: 1, rain: 1, snow: 0, fog: .1, storm: 1 },
+  snow:    { label: 'Ninsoare', word: 'ZAPADA', cloud: .9, rain: 0, snow: .7, fog: .1, storm: 0 }
+};
+const CODE_LABEL = { 0: 'Senin', 1: 'Predominant senin', 2: 'Parțial noros', 3: 'Înnorat', 45: 'Ceață', 48: 'Ceață cu chiciură',
+  51: 'Burniță slabă', 53: 'Burniță', 55: 'Burniță deasă', 56: 'Burniță înghețată', 57: 'Burniță înghețată',
+  61: 'Ploaie slabă', 63: 'Ploaie', 65: 'Ploaie puternică', 66: 'Ploaie înghețată', 67: 'Ploaie înghețată',
+  71: 'Ninsoare slabă', 73: 'Ninsoare', 75: 'Ninsoare puternică', 77: 'Grăunțe de zăpadă',
+  80: 'Averse slabe', 81: 'Averse', 82: 'Averse puternice', 85: 'Averse de ninsoare', 86: 'Averse de ninsoare',
+  95: 'Furtună', 96: 'Furtună cu grindină', 99: 'Furtună cu grindină' };
+const INTENS = { 51: .2, 53: .3, 55: .45, 56: .3, 57: .45, 61: .4, 63: .7, 65: 1, 66: .5, 67: .8, 80: .45, 81: .7, 82: 1, 71: .4, 73: .7, 75: 1, 77: .3, 85: .6, 86: 1 };
+function codeToWx(code, cc) {
+  let k = 'clear';
+  if (code === 0) k = 'clear'; else if (code <= 2) k = 'partly'; else if (code === 3) k = 'cloudy';
+  else if (code === 45 || code === 48) k = 'fog';
+  else if (code >= 51 && code <= 57) k = 'drizzle';
+  else if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) k = 'rain';
+  else if ((code >= 71 && code <= 77) || code === 85 || code === 86) k = 'snow';
+  else if (code >= 95) k = 'storm';
+  const w = { ...WX[k] };
+  if (k === 'rain' || k === 'drizzle') w.rain = INTENS[code] ?? w.rain;
+  if (k === 'snow') w.snow = INTENS[code] ?? w.snow;
+  if (cc != null && (k === 'clear' || k === 'partly' || k === 'cloudy')) w.cloud = clamp(cc / 100 * .95);
+  w.label = CODE_LABEL[code] || w.label;
+  return w;
+}
+
+/* ───────────── stare ───────────── */
+const ST = {
+  lat: 45.4353, lon: 28.0080, place: 'Galați', utcOffset: null,
+  temp: null, code: null, cc: null, sunrise: 7, sunset: 18.5, wind: .15, windSpd: 8,
+  live: null, updated: null, err: false,
+  timeMode: 'live', manualH: 22, timelapse: P.has('timelapse'),
+  wxMode: WX[P.get('weather')] ? P.get('weather') : 'live',
+  seed: parseInt(P.get('seed')) || 20771
+};
+if (P.get('time')) { const m = /^(\d{1,2})(?::(\d{2}))?$/.exec(P.get('time')); if (m) { ST.timeMode = 'manual'; ST.manualH = (+m[1] % 24) + (+(m[2] || 0)) / 60; } }
+if (ST.timelapse && ST.timeMode === 'live') { ST.timeMode = 'manual'; ST.manualH = liveHour(); }
+
+function liveHour() {
+  const off = ST.utcOffset != null ? ST.utcOffset : -new Date().getTimezoneOffset() * 60;
+  const d = new Date(Date.now() + off * 1000);
+  return d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600 + d.getUTCMilliseconds() / 3.6e6;
+}
+const hourNow = () => ST.timeMode === 'live' ? liveHour() : ST.manualH;
+function targetWx() {
+  if (ST.wxMode !== 'live') return WX[ST.wxMode];
+  if (ST.live) return ST.live;
+  return WX.clear;
+}
+const cur = { cloud: .05, rain: 0, snow: 0, fog: 0, storm: 0, wind: .15 };
+{ const t = targetWx(); Object.assign(cur, { cloud: t.cloud, rain: t.rain, snow: t.snow, fog: t.fog, storm: t.storm }); }
+
+function traffic(h) {
+  const d = [.3, .2, .12, .09, .11, .22, .5, .8, .9, .75, .7, .7, .75, .7, .7, .75, .85, 1, 1, .95, .85, .7, .55, .4];
+  const i = Math.floor(h) % 24, f = h - Math.floor(h);
+  return lerp(d[i], d[(i + 1) % 24], f);
+}
+function moonPhase() { const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14); return (((Date.now() - ref) / 864e5) % syn + syn) % syn / syn; }
+
+/* ───────────── canvas ───────────── */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W = 0, H = 0, K = 3;
+const M = 24; // margine pentru parallax
+let scene, sc, glow, gl, g2, g2c, g4, g4c, g8, g8c;
+let layers = [], stars = [], lanes = [], beams = [], cars = [], rain = [], snow = [], drops = [], steam = [];
+let cloudTex, cloudTint, cloudTintC, fgMask, fgMaskC, fg, fgC, tmp, tmpC;
+let FG = {}, BB = null, ship = null;
+
+const LAYERS = [
+  { id: 'far',  depth: .22, minW: 7,  maxW: 20, minH: .22, maxH: .52, tall: .14, gap: [0, 2],  ww: 1, wh: 1, wgx: 1, wgy: 1, wm: 1, night: '#1b1233', day: '#8a91a6', haze: .5,  neon: 0,   glowA: .55, density: .38 },
+  { id: 'mid',  depth: .55, minW: 13, maxW: 32, minH: .3,  maxH: .66, tall: .12, gap: [1, 6],  ww: 2, wh: 2, wgx: 2, wgy: 2, wm: 2, night: '#140c25', day: '#61687e', haze: .24, neon: .5,  glowA: .75, density: .36 },
+  { id: 'near', depth: 1,   minW: 26, maxW: 54, minH: .4,  maxH: .84, tall: .1,  gap: [10, 36], ww: 3, wh: 3, wgx: 2, wgy: 3, wm: 3, night: '#0a0716', day: '#3b3f50', haze: .06, neon: .65, glowA: .9,  density: .34 }
+];
+
+function resize() {
+  const iw = innerWidth, ih = innerHeight;
+  K = iw < ih ? Math.max(2, Math.round(iw / 200)) : Math.max(2, Math.round(ih / 270));
+  W = Math.ceil(iw / K); H = Math.ceil(ih / K);
+  cv.width = W * K; cv.height = H * K;
+  cv.style.width = W * K + 'px'; cv.style.height = H * K + 'px';
+  [scene, sc] = mk(W, H); [glow, gl] = mk(W, H);
+  [g2, g2c] = mk(W / 2, H / 2); [g4, g4c] = mk(W / 4, H / 4); [g8, g8c] = mk(W / 8, H / 8);
+  for (const c of [g2c, g4c, g8c]) { c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; }
+  genWorld();
+  lastRebuild = -1e9;
+}
+
+/* ───────────── generare lume ───────────── */
+function genWorld() {
+  const R = rngOf(ST.seed + W * 7 + H * 13);
+  const ri = (a, b) => Math.floor(a + R() * (b - a + 1));
+  layers = LAYERS.map(cfg => {
+    const LW = W + 2 * M;
+    const [c, x] = mk(LW, H), [e, ex] = mk(LW, H);
+    const L = { cfg, c, x, e, ex, b: [], wins: [], neons: [], blinks: [], dyn: [] };
+    let px = -ri(0, 8);
+    while (px < LW) {
+      const w = ri(cfg.minW, cfg.maxW);
+      let h = Math.round(H * (cfg.minH + R() * (cfg.maxH - cfg.minH)));
+      if (R() < cfg.tall) h = Math.min(Math.round(h * 1.4), Math.round(H * .95));
+      const top = H - h;
+      const b = { x: px, w, h, top, parts: [{ x: px, y: top, w, h }], roof: [], style: R() < .62 ? 'grid' : R() < .5 ? 'bands' : 'cols', office: R() < .3 };
+      if (R() < .38 && w > 10) {
+        const ow = ri(2, Math.max(2, (w / 4) | 0)), h2 = ri(4, Math.max(5, (h * .14) | 0));
+        b.parts.push({ x: px + ow, y: top - h2, w: w - 2 * ow, h: h2 }); b.top = top - h2;
+        if (R() < .35 && w - 2 * ow > 8) { const ow2 = ow + ri(2, 3), h3 = ri(3, 8); b.parts.push({ x: px + ow2, y: b.top - h3, w: w - 2 * ow2, h: h3 }); b.top -= h3; }
+      }
+      if (R() < .32) {
+        const ax = px + ri(2, Math.max(2, w - 3)), ah = ri(4, cfg.id === 'far' ? 16 : 24);
+        b.ant = { x: ax, y: b.top - ah, h: ah };
+        L.blinks.push({ x: ax, y: b.top - ah - 1, ph: R() * 6, sp: .9 + R() * .8 });
+      }
+      if (R() < .5) { const n = ri(1, 3); for (let i = 0; i < n; i++) { const rw = ri(2, 5), rh = ri(1, 4); b.roof.push({ x: px + ri(1, Math.max(1, w - rw - 1)), y: b.top - rh, w: rw, h: rh }); } }
+      for (const p of b.parts) genWindows(L, b, p, R);
+      if (cfg.neon && R() < cfg.neon && w >= 12) genNeon(L, b, R, ri);
+      L.b.push(b);
+      px += w + ri(cfg.gap[0], cfg.gap[1]);
+    }
+    return L;
+  });
+
+  // billboard pe o clădire apropiată, în zona vizibilă
+  BB = null;
+  const near = layers[2];
+  const cands = near.b.filter(b => b.w >= 30 && b.x > M + W * .12 && b.x + b.w < M + W * .58 && b.h > H * .5);
+  if (cands.length) {
+    const b = cands.sort((a, c) => c.w - a.w)[0];
+    const k = b.w >= 50 ? 2 : 1;
+    const bw = Math.min(b.w - 4, k === 2 ? 46 : 26), bh = k === 2 ? 16 : 9;
+    BB = { x: b.x + ((b.w - bw) >> 1), y: b.top + 8 + ri(0, 8), w: bw, h: bh, k, layer: near };
+    // scoate ferestrele de sub billboard
+    near.wins = near.wins.filter(w => !(w.x + w.w > BB.x - 1 && w.x < BB.x + BB.w + 1 && w.y + w.h > BB.y - 1 && w.y < BB.y + BB.h + 1));
+    near.neons = near.neons.filter(n => !(n.x + n.w > BB.x - 2 && n.x < BB.x + BB.w + 2 && n.y + n.h > BB.y - 2 && n.y < BB.y + BB.h + 2));
+  }
+
+  // stele
+  stars = [];
+  const ns = Math.round(W * H / 900);
+  for (let i = 0; i < ns; i++) stars.push({ x: Math.floor(R() * W), y: Math.floor(R() * H * .6), b: .3 + R() * .7, tw: R() * 6, big: R() < .06 });
+
+  // benzi de trafic aerian
+  lanes = [];
+  const ly = [.27, .34, .42, .5, .57];
+  ly.forEach((f, i) => lanes.push({ y: Math.round(H * f), d: .28 + i * .15, dir: i % 2 ? -1 : 1, acc: R() * 3 }));
+  cars = [];
+  for (const ln of lanes) { const n = ri(0, 2); for (let i = 0; i < n; i++) spawnCar(ln, R() * W); }
+
+  // reflectoare
+  beams = [];
+  const far = layers[0], tall = far.b.filter(b => b.x > M && b.x < M + W).sort((a, b) => a.top - b.top);
+  for (let i = 0; i < Math.min(2, tall.length); i++) beams.push({ x: tall[i * 2 % tall.length].x + (tall[i * 2 % tall.length].w >> 1) - M, y: tall[i * 2 % tall.length].top, ph: R() * 6, sp: .1 + R() * .08, col: i ? hex('#c9b6ff') : hex('#b8f6ff') });
+
+  genClouds(R);
+  genFg(R);
+  rain = []; snow = []; drops = []; steam = [];
+  ship = null; shipTimer = 4;
+  if (W > 160) spawnShip(R() < .5 ? 1 : -1, W * (.35 + R() * .3));
+}
+
+function genWindows(L, b, p, R) {
+  const c = L.cfg;
+  const occ = R() < .88 ? clamp(c.density + (R() - .5) * .35, .08, .9) : .04;
+  const yMax = Math.min(p.y + p.h, H) - 1;
+  const add = (x, y, w, h) => L.wins.push(makeWin(x, y, w, h, b.office, occ, R));
+  if (b.style === 'bands' && p.w > 6) {
+    for (let y = p.y + c.wm + 1; y + c.wh <= yMax; y += c.wh + c.wgy + 1) {
+      // bandă împărțită în segmente (apartamente)
+      let x = p.x + c.wm; const end = p.x + p.w - c.wm;
+      while (x < end) { const sw = Math.min(end - x, 3 + Math.floor(R() * 6)); if (sw > 1) add(x, y, sw - 1, c.wh); x += sw; }
+    }
+  } else {
+    const cols = b.style === 'cols';
+    for (let y = p.y + c.wm + 1; y + c.wh <= yMax; y += c.wh + c.wgy) {
+      let ci = 0;
+      for (let x = p.x + c.wm; x + c.ww <= p.x + p.w - c.wm; x += c.ww + c.wgx, ci++) {
+        if (cols && ci % 3 === 2) continue;
+        add(x, y, c.ww, c.wh);
+      }
+    }
+  }
+}
+function makeWin(x, y, w, h, office, occ, R) {
+  let kind; const r = R();
+  if (R() > occ) kind = 'empty';
+  else if (office) kind = 'office';
+  else kind = r < .07 ? 'tv' : r < .14 ? 'mag' : r < .2 ? 'cool' : r < .6 ? 'home' : 'home2';
+  if (R() < .012) kind = 'always';
+  return { x, y, w, h, kind, ao: -1.3 + R() * 1.7, bed: 21.2 + Math.pow(R(), .85) * 6.4, early: R() < .33, wk: 4.8 + R() * 2.4, wo: R() * 1.2,
+    ofA: 7 + R() * 2.2, ofB: 16.5 + R() * (R() < .22 ? 7.5 : 3), gloom: R() < .3, ph: R() * 100 };
+}
+function genNeon(L, b, R, ri) {
+  const word = WORDS[ri(0, WORDS.length - 1)];
+  const col = ri(0, NEON.length - 1);
+  const vh = word.length * 6 + 3;
+  const base = { word, col, flick: R() < .4 ? ri(0, word.length - 1) : -1, off: R() * 100, late: R() < .3, hum: R() * 6 };
+  if (R() < .6 && vh < b.h * .6) {
+    const x = R() < .5 ? b.x - 2 : b.x + b.w - 3;
+    const y = b.top + ri(4, Math.max(5, (b.h * .3) | 0));
+    L.neons.push({ ...base, type: 'v', x, y, w: 5, h: vh });
+  } else {
+    const tw = textW(word);
+    if (tw + 4 > b.w + 6) return;
+    L.neons.push({ ...base, type: 'h', x: b.x + ((b.w - tw - 4) >> 1), y: b.top - 10, w: tw + 4, h: 9, legs: true });
+  }
+}
+function spawnCar(ln, x) {
+  const d = ln.d + (Math.random() - .5) * .06;
+  const len = Math.max(2, Math.round(2 + d * 5)), hh = d > .6 ? 2 : 1;
+  const c = { ln, d, len, hh, dir: ln.dir, y: ln.y + Math.round((Math.random() - .5) * 3), v: (14 + Math.random() * 18) * (.5 + d),
+    x: x != null ? x : (ln.dir > 0 ? -M - len - 4 : W + M + 4), ph: Math.random() * 6,
+    under: Math.random() < .35 ? NEON[Math.floor(Math.random() * 2) + (Math.random() < .3 ? 4 : 0)] : null, taxi: Math.random() < .12 };
+  cars.push(c);
+}
+let shipTimer = 0;
+function spawnShip(dir, x) {
+  ship = { dir, x: x != null ? x : (dir > 0 ? -50 : W + 50), y: Math.round(H * (.13 + Math.random() * .08)), v: 5 + Math.random() * 3, scroll: 0 };
+}
+
+/* nori: textură value-noise periodică pe orizontală */
+function genClouds(R) {
+  const cw = Math.max(64, W * 2), ch = Math.round(H * .58);
+  [cloudTex] = mk(cw, ch); const cx = cloudTex.getContext('2d');
+  [cloudTint, cloudTintC] = mk(cw, ch);
+  const img = cx.createImageData(cw, ch), d = img.data;
+  const sd = Math.floor(R() * 1e6);
+  const hash = (x, y, o) => { let n = Math.sin(x * 127.1 + y * 311.7 + o * 74.7 + sd) * 43758.5453; return n - Math.floor(n); };
+  const vn = (u, v, per, o) => {
+    const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0;
+    const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const a = hash(((x0 % per) + per) % per, y0, o), b = hash((((x0 + 1) % per) + per) % per, y0, o);
+    const c = hash(((x0 % per) + per) % per, y0 + 1, o), e = hash((((x0 + 1) % per) + per) % per, y0 + 1, o);
+    return lerp(lerp(a, b, sx), lerp(c, e, sx), sy);
+  };
+  for (let y = 0; y < ch; y++) {
+    const prof = Math.sin(clamp(y / ch) * Math.PI) * .55 + .45 * (1 - y / ch);
+    for (let x = 0; x < cw; x++) {
+      let n = 0, amp = .55, f = 5, tot = 0;
+      for (let o = 0; o < 4; o++) {
+        const cell = cw / f;
+        n += amp * vn(x / cell, y / cell * 2.4, f, o); tot += amp; amp *= .5; f *= 2;
+      }
+      n = n / tot * (.55 + prof * .6);
+      let a = clamp((n - .4) * 3.2);
+      a = a > .7 ? 1 : a > .4 ? .62 : a > .14 ? .3 : 0;
+      const i = (y * cw + x) * 4; d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = a * 255;
+    }
+  }
+  cx.putImageData(img, 0, 0);
+}
+
+/* prim-plan: rama ferestrei, pervaz, plantă, cană, pisică */
+function genFg(R) {
+  const F = Math.max(3, Math.min(8, Math.round(H * .024)));
+  const sillH = Math.round(H * .12), sillY = H - sillH;
+  const twoPanes = W >= 260;
+  const mw = twoPanes ? Math.max(2, F - 2) : 0, mx = twoPanes ? Math.round(W * .63) : W - F;
+  [fgMask, fgMaskC] = mk(W, H); [fg, fgC] = mk(W, H); [tmp, tmpC] = mk(W, H);
+  const m = fgMaskC; m.fillStyle = '#000';
+  m.fillRect(0, 0, F, H); m.fillRect(W - F, 0, F, H); m.fillRect(0, 0, W, F); if (mw) m.fillRect(mx, 0, mw, H); m.fillRect(0, sillY, W, sillH);
+  // mâner pe montant
+  if (mw) m.fillRect(mx - 1, Math.round(H * .45), 1, 6);
+  const q = clamp(Math.min(H, W * .75) / 190, 1, 2.2), Q = v => Math.max(1, Math.round(v * q));
+  const ell = (x0, y0, rx, ry) => { for (let y = -ry; y <= ry; y++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); if (y0 + y < sillY) m.fillRect(x0 - w, y0 + y, w * 2 + 1, 1); } };
+  // plantă (sansevieria) în ghiveci
+  const plX = Math.round(Math.max(F + Q(10), W * .13));
+  const potH = Q(8);
+  for (let i = 0; i < potH; i++) { const ww = i < Math.max(1, Q(1)) ? Q(12) : Q(10) - Math.floor(i / potH * Q(3)); m.fillRect(plX - (ww >> 1), sillY - potH + i, ww, 1); }
+  // tufă de frunze (pothos) deasupra ghiveciului
+  const leaf = (x0, y0, rx, ry) => ell(Math.round(x0), Math.round(y0), Math.max(1, Math.round(rx)), Math.max(1, Math.round(ry)));
+  for (let k = 0; k < 11; k++) {
+    const a = Math.PI * (k / 10), rr = Q(7) * (.65 + R() * .45);
+    const lx = plX - Math.cos(a) * rr * 1.25, ly = sillY - potH - Q(4) - Math.sin(a) * rr * 1.05;
+    leaf(lx, ly, Q(2.8), Q(2));
+  }
+  leaf(plX, sillY - potH - Q(4), Q(6.5), Q(4));
+  leaf(plX - Q(2), sillY - potH - Q(10), Q(3.2), Q(2.4));
+  // o liană care atârnă peste marginea ghiveciului
+  for (let i = 0; i < Q(9); i++) m.fillRect(plX + Q(5) + Math.round(Math.sin(i * .5) * 1), sillY - potH + i, 1, 1);
+  leaf(plX + Q(5), sillY - potH + Q(5), Q(1.6), Q(1.2));
+  // cană
+  const mugX = Math.round(W * .29), mw2 = Q(6), mh2 = Q(6);
+  m.fillRect(mugX, sillY - mh2, mw2, mh2);
+  m.fillRect(mugX + mw2, sillY - mh2 + Q(1), Q(2), Q(1)); m.fillRect(mugX + mw2 + Q(1), sillY - mh2 + Q(1), Q(1), Q(3)); m.fillRect(mugX + mw2, sillY - mh2 + Q(3), Q(2), Q(1));
+  // pisică (din spate)
+  const cx = Math.round(Math.min(W - F - Q(20), Math.max(mx + mw + Q(12), W * .8)));
+  ell(cx, sillY - Q(4), Q(8), Q(5)); ell(cx, sillY - Q(8), Q(6), Q(6)); ell(cx, sillY - Q(15), Q(4.2), Q(4));
+  const ear = s => { for (let i = 0; i < Q(4); i++) { const w = Math.max(1, Q(3) - Math.floor(i * Q(3) / Q(4))); m.fillRect(s < 0 ? cx - Q(4) : cx + Q(4) - w + 1, sillY - Q(18) - i, w, 1); } };
+  ear(-1); ear(1);
+  FG = { F, sillH, sillY, mx, mw, plX, mugX, mugW: mw2, mugH: mh2, cx, q, panes: twoPanes ? [[F, F, mx - F, sillY - F], [mx + mw, F, W - F - mx - mw, sillY - F]] : [[F, F, W - 2 * F, sillY - F]] };
+}
+
+/* ───────────── mediu (culori + lumină) pe cadru ───────────── */
+function computeEnv(t) {
+  const h = ((hourNow() % 24) + 24) % 24;
+  const sr = ST.sunrise, ss = ST.sunset;
+  const day = sm((h - sr + .6) / 1.2) * sm((ss + .6 - h) / 1.2);
+  const tw = clamp(Math.max(1 - Math.abs(h - sr) / 1.1, 1 - Math.abs(h - ss) / 1.1, 0));
+  const W_ = cur;
+  let top = mix(SKY.night.top, SKY.day.top, day), mid = mix(SKY.night.mid, SKY.day.mid, day), hor = mix(SKY.night.hor, SKY.day.hor, day);
+  const twk = tw * (1 - W_.cloud * .7);
+  top = mix(top, SKY.tw.top, twk * .55); mid = mix(mid, SKY.tw.mid, twk * .8); hor = mix(hor, SKY.tw.hor, twk);
+  const ovk = W_.cloud * .82;
+  top = mix(top, mix(SKY.ovN.top, SKY.ovD.top, day), ovk); mid = mix(mid, mix(SKY.ovN.mid, SKY.ovD.mid, day), ovk); hor = mix(hor, mix(SKY.ovN.hor, SKY.ovD.hor, day), ovk);
+  const fogc = mix(SKY.fogN, SKY.fogD, day);
+  top = mix(top, fogc, W_.fog * .45); mid = mix(mid, fogc, W_.fog * .7); hor = mix(hor, fogc, W_.fog * .8);
+  if (W_.storm > 0) { const k = 1 - W_.storm * .3 * day; top = top.map(v => v * k); mid = mid.map(v => v * k); hor = hor.map(v => v * k); }
+  let rim = mix(NEON[0], NEON[1], .5 + .2 * Math.sin(t * .04));
+  rim = mix(rim, hor, .35 + day * .5);
+  let cloudCol = mix(hex('#3a1d4c'), hex('#dcdde4'), day);
+  cloudCol = mix(cloudCol, hex('#ff9a6e'), twk * .8);
+  cloudCol = mix(cloudCol, mix(hex('#2b1934'), hex('#8c919b'), day), W_.cloud * .6);
+  cloudCol = mix(cloudCol, fogc, W_.fog * .5);
+  const fogVeil = mix(mix(fogc, hor, .5), [150, 125, 175], .3 * (1 - day));
+  return { h, sr, ss, day, tw, n: 1 - day, top, mid, hor, rim, cloudCol, fogc, fogVeil,
+    cloud: W_.cloud, rain: W_.rain, snow: W_.snow, fog: W_.fog, storm: W_.storm, wind: W_.wind };
+}
+
+function isLit(w, h, E) {
+  switch (w.kind) {
+    case 'empty': return false;
+    case 'always': return true;
+    case 'office': return h >= w.ofA && h < w.ofB && (E.day < .9 || E.cloud > .7 || w.gloom);
+    default: {
+      const he = h < 12 ? h + 24 : h;
+      if (he >= E.ss + w.ao && he < w.bed) return true;
+      if (w.early && h >= w.wk && h < E.sr + w.wo) return true;
+      if (w.gloom && E.day > .3 && E.cloud > .75 && h > 9 && h < E.ss) return true;
+      return false;
+    }
+  }
+}
+
+function layerColor(L, E) {
+  const c = L.cfg;
+  const haze = clamp(c.haze + E.fog * (c.id === 'near' ? .22 : c.id === 'mid' ? .42 : .5));
+  let bc = mix(hex(c.night), hex(c.day), E.day * (1 - E.cloud * .35));
+  return mix(bc, E.hor, haze);
+}
+
+function renderLayer(L, E) {
+  const c = L.cfg, x = L.x, ex = L.ex, LW = L.c.width;
+  x.clearRect(0, 0, LW, H); ex.clearRect(0, 0, LW, H);
+  const bc = layerColor(L, E); L.bc = bc;
+  const edge = mix(bc, mix(E.rim, E.hor, .5), .12 + .08 * E.n);
+  x.fillStyle = rgba(bc);
+  for (const b of L.b) {
+    for (const p of b.parts) x.fillRect(p.x, p.y, p.w, p.h);
+    for (const r of b.roof) x.fillRect(r.x, r.y, r.w, r.h);
+    if (b.ant) x.fillRect(b.ant.x, b.ant.y, 1, b.ant.h);
+  }
+  x.fillStyle = rgba(edge);
+  for (const b of L.b) for (const p of b.parts) { x.fillRect(p.x, p.y, p.w, 1); x.fillRect(p.x, p.y, 1, p.h); }
+  if (c.id !== 'far') { // umbră pe partea dreaptă
+    x.fillStyle = rgba(mix(bc, [0, 0, 0], .25));
+    for (const b of L.b) for (const p of b.parts) x.fillRect(p.x + p.w - 1, p.y + 1, 1, p.h);
+  }
+  // ferestre
+  const lightVis = (.3 + .7 * (1 - E.day * .85)) * (1 - E.fog * (c.id === 'near' ? .35 : c.id === 'mid' ? .45 : .6));
+  const unlit = mix(bc, mix(E.hor, [150, 175, 210], .5), .05 + E.day * .16);
+  const buckets = {};
+  L.dyn = [];
+  x.fillStyle = rgba(unlit);
+  for (const w of L.wins) {
+    if (isLit(w, E.h, E)) { if (w.kind === 'tv') { L.dyn.push(w); continue; } (buckets[w.kind] || (buckets[w.kind] = [])).push(w); }
+    else x.fillRect(w.x, w.y, w.w, w.h);
+  }
+  const ga = c.glowA * clamp(E.n * 1.1 + E.cloud * .25 * E.day) * (1 + E.fog * .3);
+  for (const k in buckets) {
+    const col = WINC[k] || WINC.home;
+    x.fillStyle = rgba(mix(bc, col, lightVis));
+    ex.fillStyle = rgba(col, ga);
+    for (const w of buckets[k]) { x.fillRect(w.x, w.y, w.w, w.h); if (ga > .02) ex.fillRect(w.x, w.y, w.w, w.h); }
+  }
+  // un pixel de "ramă" la ferestrele mari
+  if (c.id === 'near') {
+    x.fillStyle = rgba(mix(bc, [0, 0, 0], .3));
+    for (const k in buckets) for (const w of buckets[k]) if (w.w >= 3) x.fillRect(w.x + (w.w >> 1), w.y, 1, w.h);
+  }
+}
+
+function composeFg(E) {
+  fgC.clearRect(0, 0, W, H);
+  // reflexii pe sticlă
+  fgC.fillStyle = `rgba(210,220,255,${.018 + .03 * E.day})`;
+  for (const [px, py, pw, ph] of FG.panes) {
+    fgC.save(); fgC.beginPath(); fgC.rect(px, py, pw, ph); fgC.clip();
+    for (const s of [.18, .3]) { fgC.beginPath(); const x0 = px + pw * s; fgC.moveTo(x0, py); fgC.lineTo(x0 + pw * .12, py); fgC.lineTo(x0 + pw * .12 - ph * .5, py + ph); fgC.lineTo(x0 - ph * .5, py + ph); fgC.fill(); }
+    fgC.restore();
+  }
+  const tint = (col) => { tmpC.globalCompositeOperation = 'source-over'; tmpC.clearRect(0, 0, W, H); tmpC.fillStyle = col; tmpC.fillRect(0, 0, W, H); tmpC.globalCompositeOperation = 'destination-in'; tmpC.drawImage(fgMask, 0, 0); tmpC.globalCompositeOperation = 'source-over'; };
+  const rimA = .35 + .5 * E.n;
+  tint(rgba(mix([10, 8, 18], E.rim, rimA)));
+  fgC.drawImage(tmp, -1, 0); fgC.drawImage(tmp, 1, 0); fgC.drawImage(tmp, 0, -1);
+  FG.dark = mix([7, 6, 12], E.hor, .06 + E.day * .1);
+  tint(rgba(FG.dark));
+  fgC.drawImage(tmp, 0, 0);
+  // muchia pervazului, ușor luminată
+  fgC.fillStyle = rgba(mix(FG.dark, E.hor, .16));
+  fgC.fillRect(FG.F, FG.sillY + 2, W - 2 * FG.F, 1);
+  FG.rimCol = rgba(mix([10, 8, 18], E.rim, rimA));
+}
+
+/* ───────────── rebuild periodic ───────────── */
+let lastRebuild = -1e9, E = null;
+function rebuild(Ev) {
+  for (const L of layers) renderLayer(L, Ev);
+  cloudTintC.globalCompositeOperation = 'source-over';
+  cloudTintC.clearRect(0, 0, cloudTint.width, cloudTint.height);
+  cloudTintC.fillStyle = rgba(Ev.cloudCol); cloudTintC.fillRect(0, 0, cloudTint.width, cloudTint.height);
+  // partea de jos a norilor luminată de oraș noaptea
+  const g = cloudTintC.createLinearGradient(0, 0, 0, cloudTint.height);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, rgba(mix(NEON[1], E ? E.hor : [60, 20, 70], .5), .35 * Ev.n));
+  cloudTintC.fillStyle = g; cloudTintC.fillRect(0, 0, cloudTint.width, cloudTint.height);
+  cloudTintC.globalCompositeOperation = 'destination-in'; cloudTintC.drawImage(cloudTex, 0, 0);
+  cloudTintC.globalCompositeOperation = 'source-over';
+  composeFg(Ev);
+}
+
+/* ───────────── update ───────────── */
+let flash = 0, bolt = null, boltT = 0, nextBolt = 6, parX = 0, parT = 0;
+function update(dt, Ev, t) {
+  // trafic aerian
+  const tr = traffic(Ev.h) * (1 - Ev.storm * .4) * (1 - Ev.fog * .3);
+  for (const ln of lanes) { ln.acc += dt * (.06 + .34 * tr); if (ln.acc > 1) { ln.acc -= .4 + Math.random() * 1.6; spawnCar(ln); } }
+  for (const c of cars) c.x += c.v * c.dir * dt;
+  cars = cars.filter(c => c.x > -M - 30 && c.x < W + M + 30);
+  // navă cu ecran
+  if (ship) { ship.x += ship.v * ship.dir * dt; ship.scroll += dt * 9; if (ship.x < -70 || ship.x > W + 70) { ship = null; shipTimer = 50 + Math.random() * 90; } }
+  else if ((shipTimer -= dt) <= 0 && W > 160) spawnShip(Math.random() < .5 ? 1 : -1);
+  // ploaie
+  const wantR = Math.round(Ev.rain * W * 1.3);
+  while (rain.length < wantR) rain.push(newDrop(true));
+  if (rain.length > wantR) rain.length = wantR;
+  for (const d of rain) { d.y += d.v * dt; d.x += Ev.wind * d.v * .3 * dt; if (d.y - d.l > H) Object.assign(d, newDrop(false)); if (d.x < -10) d.x += W + 20; if (d.x > W + 10) d.x -= W + 20; }
+  // zăpadă
+  const wantS = Math.round(Ev.snow * W * .9);
+  while (snow.length < wantS) snow.push(newFlake(true));
+  if (snow.length > wantS) snow.length = wantS;
+  for (const f of snow) { f.y += f.v * dt; f.x += (Ev.wind * 10 + Math.sin(t * f.f + f.p) * 6) * dt * f.z; if (f.y > H) Object.assign(f, newFlake(false)); if (f.x < -4) f.x += W + 8; if (f.x > W + 4) f.x -= W + 8; }
+  // picături pe geam
+  if (Ev.rain > .05 && Math.random() < Ev.rain * dt * 14 && drops.length < 160 * Ev.rain) {
+    const pane = FG.panes.length < 2 || Math.random() < (FG.panes[0][2] / (W - 2 * FG.F)) ? FG.panes[0] : FG.panes[1];
+    drops.push({ x: pane[0] + 1 + Math.random() * (pane[2] - 3), y: pane[1] + Math.random() * (pane[3] - 3), s: Math.random() < .4 ? 2 : 1, vy: 0, slide: Math.random() < .25, life: 25 + Math.random() * 40, age: 0 });
+  }
+  for (const d of drops) {
+    d.age += dt;
+    if (d.slide && d.age > 1.5) { d.vy = Math.min(d.vy + dt * 8, 14); d.y += d.vy * dt; d.x += Math.sin(d.age * 3) * .05; }
+  }
+  drops = drops.filter(d => d.y < FG.sillY - 1 && d.age < d.life + (Ev.rain > .05 ? 0 : -9999));
+  // abur din cană
+  const steamy = ST.temp == null ? Ev.n > .5 : (ST.temp < 16 || Ev.n > .6);
+  if (steamy && Math.random() < dt * 6) steam.push({ x: FG.mugX + FG.mugW * (.3 + Math.random() * .4), y: FG.sillY - FG.mugH - 1, a: .35, ph: Math.random() * 6 });
+  for (const s of steam) { s.y -= dt * 4; s.a -= dt * .09; }
+  steam = steam.filter(s => s.a > 0);
+  // fulgere
+  if (Ev.storm > .5) {
+    nextBolt -= dt;
+    if (nextBolt <= 0) {
+      nextBolt = 7 + Math.random() * 18; flash = 1; boltT = .22;
+      bolt = makeBolt(); setTimeout(() => { flash = Math.max(flash, .7); }, 130);
+      Snd.thunder(.6 + Math.random() * 2.4);
+    }
+  }
+  flash *= Math.exp(-dt * 5); boltT -= dt;
+  // parallax
+  parX += (parT + Math.sin(t * .07) * .12 - parX) * (1 - Math.exp(-dt * 2.5));
+}
+function newDrop(any) { const near = Math.random() < .45; return { x: Math.random() * (W + 20) - 10, y: any ? Math.random() * H : -Math.random() * 30, l: near ? 4 + Math.random() * 4 : 2 + Math.random() * 2, v: near ? 260 + Math.random() * 80 : 170 + Math.random() * 50, near }; }
+function newFlake(any) { const z = .4 + Math.random() * .8; return { x: Math.random() * W, y: any ? Math.random() * H : -2, v: 8 + z * 14, z, f: .5 + Math.random(), p: Math.random() * 6, s: z > 1 ? 2 : 1 }; }
+function makeBolt() {
+  const pts = []; let x = W * (.15 + Math.random() * .7), y = 0; const end = H * (.35 + Math.random() * .2);
+  pts.push([x, y]);
+  while (y < end) { y += 3 + Math.random() * 6; x += (Math.random() - .5) * 9; pts.push([x, y]); }
+  return pts;
+}
+
+/* ───────────── desen ───────────── */
+function drawSky(Ev, t) {
+  for (let y = 0; y < H; y++) {
+    const f = y / H;
+    const c = f < .55 ? mix(Ev.top, Ev.mid, f / .55) : mix(Ev.mid, Ev.hor, (f - .55) / .45);
+    sc.fillStyle = rgba(c); sc.fillRect(0, y, W, 1);
+  }
+  // stele
+  const sa = Ev.n * (1 - Ev.cloud) * (1 - Ev.fog);
+  if (sa > .02) for (const s of stars) {
+    const a = sa * s.b * (.6 + .4 * Math.sin(t * 1.3 + s.tw * 7));
+    sc.fillStyle = `rgba(230,225,255,${a})`; sc.fillRect(s.x, s.y, 1, 1);
+    if (s.big && a > .3) { sc.fillStyle = `rgba(230,225,255,${a * .35})`; sc.fillRect(s.x - 1, s.y, 3, 1); sc.fillRect(s.x, s.y - 1, 1, 3); }
+  }
+  // lună
+  const mt = ((Ev.h - 18 + 24) % 24) / 12;
+  if (mt > 0 && mt < 1) {
+    const mx = Math.round(W * (.12 + .76 * mt)), my = Math.round(H * .06 + (1 - Math.sin(Math.PI * mt)) * H * .22);
+    const ma = clamp(Ev.n * 1.2) * (1 - Ev.cloud * .75) * (1 - Ev.fog * .7);
+    if (ma > .02) {
+      const r = Math.max(4, Math.round(H * .022)), ph = moonPhase(), cp = Math.cos(2 * Math.PI * ph);
+      for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+        const d = (x * x + y * y) / (r * r); if (d > 1) continue;
+        const nx = x / r, ny = y / r, e = Math.sqrt(Math.max(0, 1 - ny * ny));
+        const lit = ph < .5 ? nx > e * cp : nx < -e * cp;
+        sc.fillStyle = lit ? `rgba(240,232,255,${ma})` : `rgba(60,50,90,${ma * .35})`;
+        sc.fillRect(mx + x, my + y, 1, 1);
+      }
+      const g = gl.createRadialGradient(mx, my, 0, mx, my, r * 5);
+      g.addColorStop(0, `rgba(200,190,255,${.45 * ma})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      gl.fillStyle = g; gl.fillRect(mx - r * 5, my - r * 5, r * 10, r * 10);
+    }
+  }
+  // soare (difuz, prin smog)
+  const st = (Ev.h - Ev.sr) / (Ev.ss - Ev.sr);
+  if (st > -.05 && st < 1.05 && Ev.day > .02) {
+    const sx = W * (.88 - .76 * st), sy = H * (.5 - .36 * Math.sin(Math.PI * clamp(st)));
+    const a = Ev.day * (1 - Ev.cloud * .85) * (1 - Ev.fog * .6);
+    const col = mix([255, 240, 210], [255, 140, 80], Ev.tw);
+    const g = gl.createRadialGradient(sx, sy, 0, sx, sy, H * .25);
+    g.addColorStop(0, rgba(col, .5 * a)); g.addColorStop(1, 'rgba(0,0,0,0)');
+    gl.fillStyle = g; gl.fillRect(sx - H * .25, sy - H * .25, H * .5, H * .5);
+    sc.fillStyle = rgba(col, .8 * a); const r = Math.max(3, Math.round(H * .018));
+    for (let y = -r; y <= r; y++) { const w = Math.round(Math.sqrt(r * r - y * y)); sc.fillRect(Math.round(sx) - w, Math.round(sy) + y, w * 2 + 1, 1); }
+  }
+}
+function drawClouds(Ev, t) {
+  if (Ev.cloud < .03) return;
+  const cw = cloudTint.width;
+  const spd = 1.5 + Math.abs(Ev.wind) * 6;
+  const o1 = ((t * spd * (Ev.wind >= 0 ? 1 : -1) + parX * 3) % cw + cw) % cw;
+  const o2 = ((t * spd * .6 * (Ev.wind >= 0 ? 1 : -1) + 400) % cw + cw) % cw;
+  sc.globalAlpha = clamp(Ev.cloud * 1.15);
+  sc.drawImage(cloudTint, Math.round(o1 - cw), 0); sc.drawImage(cloudTint, Math.round(o1), 0);
+  sc.globalAlpha = clamp((Ev.cloud - .35) * 1.2);
+  if (sc.globalAlpha > 0) { const y2 = Math.round(H * .07); sc.drawImage(cloudTint, Math.round(-o2), y2); sc.drawImage(cloudTint, Math.round(cw - o2), y2); }
+  sc.globalAlpha = 1;
+}
+function drawBeams(Ev, t) {
+  const a = Ev.n * (.35 + Ev.cloud * .3 + Ev.fog * .5) * (1 - Ev.storm * .3);
+  if (a < .05) return;
+  const off = Math.round(-parX * layers[0].cfg.depth * M * .5);
+  for (const b of beams) {
+    const ang = -Math.PI / 2 + Math.sin(t * b.sp + b.ph) * .55, L = H * 1.1, sp = .035;
+    const x0 = b.x + off, y0 = b.y;
+    const p1 = [x0 + Math.cos(ang - sp) * L, y0 + Math.sin(ang - sp) * L], p2 = [x0 + Math.cos(ang + sp) * L, y0 + Math.sin(ang + sp) * L];
+    const g = gl.createLinearGradient(x0, y0, x0 + Math.cos(ang) * L, y0 + Math.sin(ang) * L);
+    g.addColorStop(0, rgba(b.col, .32 * a)); g.addColorStop(1, rgba(b.col, 0));
+    for (const c of [gl, sc]) {
+      c.fillStyle = g; c.globalAlpha = c === sc ? .5 : 1;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.closePath(); c.fill();
+    }
+    sc.globalAlpha = 1; gl.globalAlpha = 1;
+  }
+}
+function drawShip(Ev, t) {
+  if (!ship) return;
+  const x = Math.round(ship.x), y = Math.round(ship.y + Math.sin(t * .6) * 1.2);
+  const body = rgba(mix(layerColor(layers[0], Ev), [0, 0, 0], .35));
+  sc.fillStyle = body;
+  sc.fillRect(x - 16, y - 3, 32, 6); sc.fillRect(x - 14, y - 4, 28, 1); sc.fillRect(x - 14, y + 3, 28, 1);
+  sc.fillRect(x - 11, y + 4, 22, 8); sc.fillRect(ship.dir > 0 ? x - 19 : x + 16, y - 2, 3, 4);
+  // ecran
+  const scrW = 20, scrH = 7, sx = x - 10, sy = y + 5;
+  sc.fillStyle = '#05030c'; sc.fillRect(sx, sy, scrW, scrH);
+  const msg = ascii(`${ST.place}   ${ST.temp != null ? Math.round(ST.temp) + '°C' : ''}   ${fmtH(Ev.h)}   ${targetWx().word || ''}   `);
+  const tw = textW(msg) + 4, off = Math.floor(ship.scroll) % tw;
+  const col = NEON[1], cs = rgba(col);
+  sc.save(); sc.beginPath(); sc.rect(sx, sy, scrW, scrH); sc.clip();
+  drawText(sc, msg, sx + scrW - off, sy + 1, 1, cs); drawText(sc, msg, sx + scrW - off + tw, sy + 1, 1, cs);
+  sc.restore();
+  gl.fillStyle = rgba(col, .35 + .2 * Ev.n); gl.fillRect(sx, sy, scrW, scrH);
+  // lumini de poziție
+  const bl = Math.sin(t * 3) > .3;
+  if (bl) { sc.fillStyle = '#ff3b4a'; sc.fillRect(x - 16, y, 1, 1); gl.fillStyle = 'rgba(255,60,80,.9)'; gl.fillRect(x - 17, y - 1, 3, 3); }
+  if (!bl) { sc.fillStyle = '#5bff8a'; sc.fillRect(x + 15, y, 1, 1); gl.fillStyle = 'rgba(90,255,140,.9)'; gl.fillRect(x + 14, y - 1, 3, 3); }
+  // fascicul de lumină dedesubt
+  const g = gl.createLinearGradient(0, y + 12, 0, y + 40);
+  g.addColorStop(0, `rgba(255,120,220,${.18 * Ev.n})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  gl.fillStyle = g; gl.beginPath(); gl.moveTo(x - 6, y + 12); gl.lineTo(x + 6, y + 12); gl.lineTo(x + 14, y + 40); gl.lineTo(x - 14, y + 40); gl.fill();
+}
+function drawLayer(L, Ev, t) {
+  const off = Math.round(-parX * L.cfg.depth * M * .55) - M;
+  L.off = off;
+  sc.drawImage(L.c, off, 0);
+  gl.drawImage(L.e, off, 0);
+  const n = Ev.n;
+  // TV-uri
+  for (const w of L.dyn) {
+    const k = .55 + .45 * Math.sin(t * (2 + (w.ph % 3)) + w.ph) * Math.sin(t * 7.3 + w.ph * 2);
+    const col = mix(WINC.tv, [220, 230, 255], (Math.sin(t * 1.7 + w.ph) + 1) * .25);
+    sc.fillStyle = rgba(mix(L.bc, col, (.35 + .5 * k) * (.3 + .7 * n))); sc.fillRect(w.x + off, w.y, w.w, w.h);
+    gl.fillStyle = rgba(col, L.cfg.glowA * k * n); gl.fillRect(w.x + off, w.y, w.w, w.h);
+  }
+  // lumini de avertizare
+  for (const b of L.blinks) {
+    const on = Math.sin(t * b.sp * 3 + b.ph) > .55; if (!on) continue;
+    sc.fillStyle = '#ff3b4a'; sc.fillRect(b.x + off, b.y, 1, 1);
+    gl.fillStyle = `rgba(255,50,70,${.5 + .4 * n})`; gl.fillRect(b.x + off - 1, b.y - 1, 3, 3);
+  }
+  // neoane
+  for (const s of L.neons) drawNeon(s, L, off, Ev, t);
+  if (BB && BB.layer === L) drawBillboard(off, Ev, t);
+}
+function drawNeon(s, L, off, Ev, t) {
+  const col = NEON[s.col];
+  const deep = Ev.h > 3 && Ev.h < 6;
+  if (s.late && deep) return drawNeonOff(s, L, off);
+  const x = s.x + off, y = s.y;
+  const bright = .45 + .55 * Ev.n;
+  const stutter = Math.sin(t * .37 + s.off) > .985 && Math.random() < .5 ? .15 : 1;
+  sc.fillStyle = rgba(mix(L.bc, [0, 0, 0], .45)); sc.fillRect(x, y, s.w, s.h);
+  sc.fillStyle = rgba(mix(L.bc, col, .3 * bright * stutter));
+  sc.fillRect(x, y, s.w, 1); sc.fillRect(x, y + s.h - 1, s.w, 1); sc.fillRect(x, y, 1, s.h); sc.fillRect(x + s.w - 1, y, 1, s.h);
+  if (s.legs) { sc.fillStyle = rgba(L.bc); sc.fillRect(x + 2, y + s.h, 1, 1); sc.fillRect(x + s.w - 3, y + s.h, 1, 1); }
+  const flickMode = Math.sin(t * .9 + s.off) > .55;
+  for (let i = 0; i < s.word.length; i++) {
+    let a = bright * stutter;
+    if (i === s.flick && flickMode) a *= Math.random() < .45 ? .1 : 1;
+    const lx = s.type === 'v' ? x + 1 : x + 2 + i * 4, ly = s.type === 'v' ? y + 2 + i * 6 : y + 2;
+    const cc = rgba(mix(mix(L.bc, col, a), [255, 255, 255], .25 * a));
+    drawText(sc, s.word[i], lx, ly, 1, cc);
+    drawText(gl, s.word[i], lx, ly, 1, rgba(col, .95 * a * (.5 + .5 * Ev.n)));
+  }
+  gl.fillStyle = rgba(col, .12 * bright * stutter); gl.fillRect(x - 1, y - 1, s.w + 2, s.h + 2);
+}
+function drawNeonOff(s, L, off) {
+  sc.fillStyle = rgba(mix(L.bc, [0, 0, 0], .45)); sc.fillRect(s.x + off, s.y, s.w, s.h);
+  for (let i = 0; i < s.word.length; i++) drawText(sc, s.word[i], s.type === 'v' ? s.x + off + 1 : s.x + off + 2 + i * 4, s.type === 'v' ? s.y + 2 + i * 6 : s.y + 2, 1, rgba(mix(L.bc, NEON[s.col], .12)));
+}
+function drawBillboard(off, Ev, t) {
+  const x = BB.x + off, y = BB.y;
+  sc.fillStyle = '#04030a'; sc.fillRect(x - 1, y - 1, BB.w + 2, BB.h + 2);
+  sc.fillStyle = '#0b0820'; sc.fillRect(x, y, BB.w, BB.h);
+  const slot = Math.floor(t / 6) % 3;
+  const wx = targetWx();
+  let txt = slot === 0 ? fmtH(Ev.h) : slot === 1 ? (ST.temp != null ? Math.round(ST.temp) + '°C' : 'NEO') : ascii(wx.word || 'NEO');
+  const col = slot === 0 ? NEON[0] : slot === 1 ? NEON[2] : NEON[1];
+  let k = BB.k; if (textW(txt, k) > BB.w - 4) k = 1;
+  if (textW(txt, k) > BB.w - 2) txt = txt.slice(0, Math.floor((BB.w + 1) / 4));
+  const tx = x + ((BB.w - textW(txt, k)) >> 1), ty = y + ((BB.h - 5 * k) >> 1);
+  const fade = clamp(Math.min(t % 6, 6 - t % 6) * 3);
+  const a = (.55 + .45 * Ev.n) * fade;
+  drawText(sc, txt, tx, ty, k, rgba(mix([11, 8, 32], mix(col, [255, 255, 255], .2), a)));
+  drawText(gl, txt, tx, ty, k, rgba(col, .9 * a));
+  // scanlines
+  sc.fillStyle = 'rgba(0,0,0,.28)'; for (let yy = y + 1; yy < y + BB.h; yy += 2) sc.fillRect(x, yy, BB.w, 1);
+  const sl = y + Math.floor((t * 10) % BB.h); sc.fillStyle = rgba(col, .12 * fade); sc.fillRect(x, sl, BB.w, 1);
+  gl.fillStyle = rgba(col, .1 * (.5 + .5 * Ev.n)); gl.fillRect(x - 2, y - 2, BB.w + 4, BB.h + 4);
+}
+function drawCars(Ev, t, minD, maxD) {
+  const n = .35 + .65 * Ev.n;
+  const body = rgba(mix(layerColor(layers[1], Ev), [0, 0, 0], .4));
+  for (const c of cars) {
+    if (c.d < minD || c.d >= maxD) continue;
+    const off = Math.round(-parX * c.d * M * .55);
+    const x = Math.round(c.x + off), y = Math.round(c.y + Math.sin(c.ph + t * 2) * .6);
+    sc.fillStyle = c.taxi ? rgba(mix([40, 30, 10], [255, 210, 80], .5 * n)) : body;
+    sc.fillRect(x, y, c.len, c.hh);
+    if (c.hh > 1) sc.fillRect(x + 1, y - 1, c.len - 2, 1);
+    const fx = c.dir > 0 ? x + c.len : x - 1, bx = c.dir > 0 ? x - 1 : x + c.len;
+    sc.fillStyle = '#fff4d6'; sc.fillRect(fx, y, 1, 1);
+    sc.fillStyle = '#ff3448'; sc.fillRect(bx, y + c.hh - 1, 1, 1);
+    gl.fillStyle = `rgba(255,240,200,${.9 * n})`; gl.fillRect(fx - 1, y - 1, 3, 3);
+    // con de lumină
+    for (let i = 1; i < 4 + c.d * 8; i++) { gl.fillStyle = `rgba(255,240,200,${.25 * n * (1 - i / (4 + c.d * 8))})`; gl.fillRect(fx + c.dir * i, y, 1, 1); }
+    gl.fillStyle = `rgba(255,40,70,${.8 * n})`; gl.fillRect(bx - 1, y + c.hh - 2, 3, 3);
+    if (c.under) { sc.fillStyle = rgba(c.under); sc.fillRect(x + 1, y + c.hh, c.len - 2, 1); gl.fillStyle = rgba(c.under, .7 * n); gl.fillRect(x, y + c.hh, c.len, 2); }
+  }
+}
+function drawHaze(Ev, y0, a) {
+  if (a < .01) return;
+  const g = sc.createLinearGradient(0, y0, 0, H);
+  g.addColorStop(0, rgba(Ev.hor, 0)); g.addColorStop(1, rgba(mix(Ev.hor, Ev.fogc, Ev.fog), a));
+  sc.fillStyle = g; sc.fillRect(0, y0, W, H - y0);
+}
+function drawRain(Ev, near) {
+  if (!rain.length) return;
+  const col = mix(Ev.hor, [205, 215, 255], .55);
+  sc.fillStyle = rgba(col, near ? .5 : .28);
+  const sl = Ev.wind * .3;
+  for (const d of rain) {
+    if (d.near !== near) continue;
+    for (let i = 0; i < d.l; i++) sc.fillRect(Math.round(d.x - sl * i), Math.round(d.y - i), 1, 1);
+  }
+}
+function drawSnow(Ev) {
+  if (!snow.length) return;
+  sc.fillStyle = rgba(mix([235, 235, 250], Ev.hor, .15), .85);
+  for (const f of snow) sc.fillRect(Math.round(f.x), Math.round(f.y), f.s, f.s);
+}
+function drawDrops(Ev) {
+  for (const d of drops) {
+    const a = clamp(Math.min(d.age * 2, (d.life - d.age) * .3, 1));
+    const x = Math.round(d.x), y = Math.round(d.y);
+    sc.fillStyle = `rgba(235,242,255,${.8 * a})`; sc.fillRect(x, y, 1, 1);
+    sc.fillStyle = rgba(mix(Ev.hor, [190, 210, 250], .55), .55 * a); sc.fillRect(x, y + 1, d.s, d.s);
+    sc.fillStyle = `rgba(0,0,0,${.25 * a})`; sc.fillRect(x, y + 1 + d.s, d.s, 1);
+    if (d.vy > 2) { sc.fillStyle = `rgba(190,205,240,${.12 * a})`; sc.fillRect(x, y - 4, 1, 4); }
+  }
+}
+function drawFg(Ev, t) {
+  sc.drawImage(fg, 0, 0);
+  // coada pisicii
+  const sw = Math.sin(t * .8) * .5 + Math.sin(t * 2.3) * .2;
+  const q = FG.q, tk = Math.max(2, Math.round(2 * q)), pts = [];
+  for (let i = 0; i <= 16; i++) { const s = i / 16; pts.push([Math.round(FG.cx + 6 * q + s * 10 * q), Math.round(FG.sillY - tk + 1 - s * s * (5 + sw * 4) * q)]); }
+  sc.fillStyle = FG.rimCol; for (const [x, y] of pts) sc.fillRect(x, y - 1, tk, tk);
+  sc.fillStyle = rgba(FG.dark); for (const [x, y] of pts) sc.fillRect(x, y, tk, tk);
+  // urechea care tresare
+  if (Math.sin(t * .23) > .97) { sc.fillStyle = FG.rimCol; sc.fillRect(FG.cx + Math.round(4 * q), FG.sillY - Math.round(22 * q), 1, 1); }
+  // abur
+  for (const s of steam) { sc.fillStyle = `rgba(200,200,220,${s.a * .5})`; sc.fillRect(Math.round(s.x + Math.sin(s.y * .4 + s.ph) * 1.2), Math.round(s.y), 1, 1); }
+}
+
+function render(Ev, t) {
+  gl.clearRect(0, 0, W, H);
+  drawSky(Ev, t);
+  drawClouds(Ev, t);
+  drawShip(Ev, t);
+  drawBeams(Ev, t);
+  // fulger în fundal
+  if (bolt && boltT > 0) {
+    sc.fillStyle = 'rgba(235,235,255,.95)'; gl.fillStyle = 'rgba(200,210,255,.9)';
+    for (let i = 1; i < bolt.length; i++) { const [x0, y0] = bolt[i - 1], [x1, y1] = bolt[i]; const st = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0; for (let s = 0; s <= st; s++) { const x = Math.round(lerp(x0, x1, s / st)), y = Math.round(lerp(y0, y1, s / st)); sc.fillRect(x, y, 1, 1); gl.fillRect(x - 1, y, 3, 1); } }
+  }
+  drawLayer(layers[0], Ev, t);
+  drawHaze(Ev, H * .35, .22 + Ev.fog * .45);
+  if (Ev.fog > .05) { sc.fillStyle = rgba(Ev.fogVeil, Ev.fog * .6); sc.fillRect(0, 0, W, H); gl.fillStyle = `rgba(0,0,0,${Ev.fog * .55})`; gl.globalCompositeOperation = 'destination-out'; gl.fillRect(0, 0, W, H); gl.globalCompositeOperation = 'source-over'; }
+  drawCars(Ev, t, 0, .5);
+  drawRain(Ev, false);
+  drawLayer(layers[1], Ev, t);
+  drawHaze(Ev, H * .5, .1 + Ev.fog * .4);
+  if (Ev.fog > .05) { sc.fillStyle = rgba(Ev.fogVeil, Ev.fog * .45); sc.fillRect(0, 0, W, H); }
+  drawCars(Ev, t, .5, 2);
+  drawLayer(layers[2], Ev, t);
+  if (Ev.fog > .05) { drawHaze(Ev, H * .55, Ev.fog * .3); sc.fillStyle = rgba(Ev.fogVeil, Ev.fog * .32); sc.fillRect(0, 0, W, H); }
+  drawRain(Ev, true);
+  drawSnow(Ev);
+  if (flash > .02) { sc.fillStyle = `rgba(200,210,255,${flash * .45})`; sc.fillRect(0, 0, W, H); }
+  drawDrops(Ev);
+  drawFg(Ev, t);
+  if (flash > .02) { sc.fillStyle = `rgba(200,210,255,${flash * .12})`; sc.fillRect(0, 0, W, H); }
+  // obiectele din prim-plan blochează strălucirea
+  gl.globalCompositeOperation = 'destination-out'; gl.globalAlpha = 1; gl.drawImage(fgMask, 0, 0);
+  gl.globalCompositeOperation = 'source-over'; gl.globalAlpha = 1;
+  present(Ev);
+}
+function present(Ev) {
+  g2c.clearRect(0, 0, g2.width, g2.height); g2c.drawImage(glow, 0, 0, g2.width, g2.height);
+  g4c.clearRect(0, 0, g4.width, g4.height); g4c.drawImage(g2, 0, 0, g4.width, g4.height);
+  g8c.clearRect(0, 0, g8.width, g8.height); g8c.drawImage(g4, 0, 0, g8.width, g8.height);
+  const cw = cv.width, ch = cv.height;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(scene, 0, 0, cw, ch);
+  const k = (.45 + .55 * Ev.n) * (1 + Ev.fog * .35);
+  ctx.globalCompositeOperation = 'lighter'; ctx.imageSmoothingEnabled = true;
+  ctx.globalAlpha = clamp(.35 * k); ctx.drawImage(glow, 0, 0, cw, ch);
+  ctx.globalAlpha = clamp(.45 * k); ctx.drawImage(g2, 0, 0, cw, ch);
+  ctx.globalAlpha = clamp(.55 * k); ctx.drawImage(g4, 0, 0, cw, ch);
+  ctx.globalAlpha = clamp(.6 * k); ctx.drawImage(g8, 0, 0, cw, ch);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+}
+
+/* ───────────── sunet (Web Audio, generat) ───────────── */
+const Snd = {
+  ac: null, on: false,
+  init() {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    const ac = this.ac = new AC();
+    const len = ac.sampleRate * 2;
+    const wb = ac.createBuffer(1, len, ac.sampleRate), bb = ac.createBuffer(1, len, ac.sampleRate);
+    const w = wb.getChannelData(0), b = bb.getChannelData(0); let l = 0;
+    for (let i = 0; i < len; i++) { const r = Math.random() * 2 - 1; w[i] = r; l = (l + .02 * r) / 1.02; b[i] = l * 3.5; }
+    this.wb = wb;
+    const src = buf => { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; };
+    const filt = (type, f, q = .7) => { const x = ac.createBiquadFilter(); x.type = type; x.frequency.value = f; x.Q.value = q; return x; };
+    const gain = v => { const g = ac.createGain(); g.gain.value = v; return g; };
+    this.master = gain(0); this.master.connect(ac.destination);
+    this.rainG = gain(0); this.rainG.connect(this.master);
+    src(wb).connect(filt('bandpass', 2200, .5)).connect(gain(.7)).connect(this.rainG);
+    src(bb).connect(filt('lowpass', 900)).connect(gain(.9)).connect(this.rainG);
+    this.humG = gain(.2); this.humG.connect(this.master);
+    src(bb).connect(filt('lowpass', 170)).connect(this.humG);
+    this.windG = gain(0); this.windG.connect(this.master);
+    const wf = filt('bandpass', 420, 1.3); src(wb).connect(wf).connect(this.windG);
+    const lfo = ac.createOscillator(), lg = gain(160); lfo.frequency.value = .11; lfo.connect(lg).connect(wf.frequency); lfo.start();
+    return true;
+  },
+  toggle() {
+    if (!this.ac && !this.init()) return false;
+    this.on = !this.on;
+    if (this.on) this.ac.resume();
+    this.master.gain.setTargetAtTime(this.on ? .7 : 0, this.ac.currentTime, .4);
+    if (E) this.update(E);
+    return this.on;
+  },
+  update(Ev) {
+    if (!this.ac) return; const t = this.ac.currentTime;
+    this.rainG.gain.setTargetAtTime(Ev.rain * .5, t, 1);
+    this.windG.gain.setTargetAtTime(.03 + Ev.snow * .22 + Ev.fog * .1 + Ev.storm * .15 + Math.abs(Ev.wind) * .06, t, 1.5);
+    this.humG.gain.setTargetAtTime(.1 + .16 * traffic(Ev.h), t, 2);
+  },
+  thunder(delay) {
+    if (!this.on || !this.ac) return;
+    const ac = this.ac, t = ac.currentTime + delay;
+    const s = ac.createBufferSource(); s.buffer = this.wb; s.loop = true;
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(55, t + 3.5);
+    const g = ac.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + .06); g.gain.exponentialRampToValueAtTime(.001, t + 4.2);
+    s.connect(f).connect(g).connect(this.master); s.start(t); s.stop(t + 4.4);
+  }
+};
+
+/* ───────────── date live ───────────── */
+const $ = id => document.getElementById(id);
+const parseH = s => { const m = /T(\d{2}):(\d{2})/.exec(s || ''); return m ? +m[1] + m[2] / 60 : null; };
+async function loadWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${ST.lat.toFixed(4)}&longitude=${ST.lon.toFixed(4)}` +
+    `&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
+  try {
+    const r = await fetch(url); if (!r.ok) throw new Error(r.status);
+    const j = await r.json(), c = j.current;
+    ST.utcOffset = j.utc_offset_seconds;
+    ST.temp = c.temperature_2m; ST.code = c.weather_code; ST.cc = c.cloud_cover;
+    const sr = parseH(j.daily?.sunrise?.[0]), ss = parseH(j.daily?.sunset?.[0]);
+    if (sr != null && ss != null && ss > sr) { ST.sunrise = sr; ST.sunset = ss; }
+    const rad = (c.wind_direction_10m || 0) * Math.PI / 180, spd = c.wind_speed_10m || 0;
+    ST.wind = clamp(-Math.sin(rad) * spd / 30, -1, 1); ST.windSpd = spd;
+    ST.live = codeToWx(ST.code, ST.cc); ST.live.wind = ST.wind;
+    ST.updated = new Date(); ST.err = false;
+  } catch (e) { ST.err = true; }
+  updateHud(true);
+}
+async function geocode(name) {
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=ro&format=json`);
+    const j = await r.json(); const g = j.results && j.results[0];
+    if (!g) return false;
+    ST.lat = g.latitude; ST.lon = g.longitude; ST.place = g.name + (g.country_code ? ', ' + g.country_code : '');
+    return true;
+  } catch (e) { return false; }
+}
+async function reverseName() {
+  try {
+    const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${ST.lat}&longitude=${ST.lon}&localityLanguage=ro`);
+    const j = await r.json(); const n = j.city || j.locality || j.principalSubdivision;
+    if (n) { ST.place = n; updateHud(true); }
+  } catch (e) {}
+}
+function useGeolocation(explicit) {
+  return new Promise(res => {
+    if (!navigator.geolocation) return res(false);
+    navigator.geolocation.getCurrentPosition(p => {
+      ST.lat = p.coords.latitude; ST.lon = p.coords.longitude; ST.place = 'Locația ta';
+      if (explicit) store.set('nn-loc', null);
+      reverseName(); res(true);
+    }, () => res(false), { timeout: 8000, maximumAge: 3600e3 });
+  });
+}
+async function initLocation() {
+  if (P.get('lat') && P.get('lon')) { ST.lat = +P.get('lat'); ST.lon = +P.get('lon'); ST.place = P.get('name') || 'Coordonate'; }
+  else if (P.get('city') && await geocode(P.get('city'))) {}
+  else { const s = store.get('nn-loc'); if (s && s.lat != null) Object.assign(ST, s); else await useGeolocation(false); }
+  await loadWeather();
+}
+
+/* ───────────── interfață ───────────── */
+const sw = $('sw');
+function updateHud(full) {
+  const h = hourNow();
+  $('clock').textContent = fmtH(h);
+  if (!full) return;
+  $('place').textContent = ST.place + (ST.timeMode === 'manual' ? ' · manual' : '');
+  const w = targetWx();
+  const lbl = ST.wxMode === 'live' ? (ST.live ? ST.live.label : 'Vreme indisponibilă') : WX[ST.wxMode].label + ' (simulat)';
+  $('wx').innerHTML = `${lbl}${ST.temp != null ? ` · <b>${Math.round(ST.temp)}°C</b>` : ''}`;
+  const hh = h % 24;
+  $('tag').textContent = (hh >= 1 && hh < 5) ? 'orașul doarme' : (hh >= 5 && hh < ST.sunrise) ? 'se trezesc primii' : (hh >= ST.sunset - .5 && hh < ST.sunset + .7) ? 'se aprind luminile' : '';
+  $('status').textContent = ST.err ? 'Nu am putut încărca vremea. Scena rulează cu vreme simulată.' :
+    ST.updated ? `Open-Meteo · actualizat ${pad(ST.updated.getHours())}:${pad(ST.updated.getMinutes())} · răsărit ${fmtH(ST.sunrise)}, apus ${fmtH(ST.sunset)}` : 'Se încarcă vremea…';
+  $('tLive').classList.toggle('on', ST.timeMode === 'live'); $('tMan').classList.toggle('on', ST.timeMode === 'manual');
+  $('tLapse').checked = ST.timelapse; $('wSel').value = ST.wxMode;
+}
+function setManual(h) { ST.timeMode = 'manual'; ST.manualH = h; lastRebuild = -1e9; updateHud(true); }
+$('tLive').onclick = () => { ST.timeMode = 'live'; ST.timelapse = false; lastRebuild = -1e9; updateHud(true); };
+$('tMan').onclick = () => setManual(liveHour());
+$('tSlider').oninput = e => { ST.timelapse = false; setManual(+e.target.value); };
+$('tLapse').onchange = e => { ST.timelapse = e.target.checked; if (ST.timelapse && ST.timeMode === 'live') setManual(liveHour()); updateHud(true); };
+$('wSel').onchange = e => { ST.wxMode = e.target.value; updateHud(true); };
+$('cityForm').onsubmit = async e => {
+  e.preventDefault(); const v = $('cityIn').value.trim(); if (!v) return;
+  $('status').textContent = 'Caut…';
+  if (await geocode(v)) { store.set('nn-loc', { lat: ST.lat, lon: ST.lon, place: ST.place }); ST.utcOffset = null; await loadWeather(); $('cityIn').value = ''; }
+  else $('status').textContent = 'Nu am găsit orașul.';
+};
+$('bGeo').onclick = async () => { $('status').textContent = 'Cer acces la locație…'; if (await useGeolocation(true)) { ST.utcOffset = null; await loadWeather(); } else $('status').textContent = 'Locația nu e disponibilă.'; };
+function toggleSound() { const on = Snd.toggle(); $('bSound').setAttribute('aria-pressed', on); sw.style.opacity = on ? 1 : .25; }
+sw.style.opacity = .25;
+$('bSound').onclick = toggleSound;
+function toggleFull() { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); }
+$('bFull').onclick = toggleFull;
+function togglePanel() { const o = $('panel').classList.toggle('open'); $('bPanel').setAttribute('aria-pressed', o); }
+$('bPanel').onclick = togglePanel;
+if (P.get('hud') === '0') document.body.classList.add('nohud');
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+  const k = e.key.toLowerCase();
+  if (k === 'h') document.body.classList.toggle('nohud');
+  else if (k === 's') toggleSound();
+  else if (k === 'f') toggleFull();
+  else if (k === 'd') togglePanel();
+  poke();
+});
+let idleT = 0;
+function poke() { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if (!$('panel').classList.contains('open')) document.body.classList.add('idle'); }, 4000); }
+addEventListener('pointermove', e => { parT = (e.clientX / innerWidth - .5) * 2; poke(); });
+addEventListener('pointerdown', poke);
+let rT = 0; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(resize, 150); });
+
+/* ───────────── buclă ───────────── */
+let lastT = performance.now(), T = 0, hudT = 0, sndT = 0;
+function frame(now) {
+  const dt = Math.min(.05, (now - lastT) / 1000); lastT = now; T += dt;
+  if (ST.timelapse) { ST.manualH = (ST.manualH + dt * .2) % 24; }
+  const tw = targetWx(), k = 1 - Math.exp(-dt * .9);
+  cur.cloud = lerp(cur.cloud, tw.cloud, k); cur.rain = lerp(cur.rain, tw.rain, k); cur.snow = lerp(cur.snow, tw.snow, k);
+  cur.fog = lerp(cur.fog, tw.fog, k); cur.storm = lerp(cur.storm, tw.storm, k);
+  cur.wind = lerp(cur.wind, ST.wxMode === 'live' ? ST.wind : (tw.storm ? .7 : tw.rain ? .25 : .12), k);
+  E = computeEnv(T);
+  const every = ST.timeMode === 'live' && !ST.timelapse ? 1000 : 110;
+  if (now - lastRebuild > every) { rebuild(E); lastRebuild = now; }
+  update(dt, E, T);
+  render(E, T);
+  if (now - hudT > 500) { updateHud(now - hudT > 500); hudT = now; if (ST.timeMode === 'manual') { $('tSlider').value = ST.manualH; $('mh').textContent = fmtH(ST.manualH); } }
+  if (now - sndT > 1000) { Snd.update(E); sndT = now; }
+  requestAnimationFrame(frame);
+}
+
+resize();
+updateHud(true);
+poke();
+requestAnimationFrame(frame);
+initLocation();
+setInterval(loadWeather, 15 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) lastT = performance.now(); });
+window.__nn = { ST, get E() { return E; } };
+})();
+</script>
+</body>
+</html>
