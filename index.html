@@ -9,9 +9,9 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%2307060c'/%3E%3Crect x='2' y='6' width='4' height='10' fill='%231b1233'/%3E%3Crect x='7' y='3' width='4' height='13' fill='%23130c24'/%3E%3Crect x='12' y='8' width='3' height='8' fill='%231b1233'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23ffc977'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%235ef2ff'/%3E%3Crect x='3' y='9' width='1' height='1' fill='%23ff4fd8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--fg:#ece6ff;--dim:#a99fcf;--acc:#5ef2ff;--acc2:#ff4fd8;--panel:rgba(11,8,22,.78);--line:rgba(160,130,255,.22)}
+:root{--fg:#ece6ff;--dim:#aaa1cf;--acc:#5ef2ff;--acc2:#ff4fd8;--panel:rgba(11,8,22,.78);--card:rgba(10,7,22,.66);--line:rgba(160,130,255,.24);--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#07060c;overflow:hidden;color:var(--fg);font-family:"VT323",ui-monospace,Menlo,Consolas,monospace}
 canvas#c{position:fixed;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -20,17 +20,82 @@ canvas#c{position:fixed;left:0;top:0;image-rendering:pixelated;image-rendering:c
 body.idle .ui{opacity:0;pointer-events:none}
 body.idle{cursor:none}
 body.nohud .ui{display:none}
-#hud{position:fixed;left:max(22px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));pointer-events:none;text-shadow:0 0 10px rgba(94,242,255,.35),0 2px 0 rgba(0,0,0,.6)}
-#clock{font-size:clamp(44px,7vw,72px);line-height:.9;letter-spacing:1px}
-#place{font-size:22px;color:var(--dim);margin-top:4px}
-#wx{font-size:22px;margin-top:2px}
-#wx b{color:var(--acc);font-weight:normal}
-#tag{font-size:16px;color:var(--acc2);margin-top:6px;opacity:.85;min-height:16px}
+#hud{position:fixed;left:max(22px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));width:min(372px,calc(100vw - 44px));pointer-events:none;z-index:2}
+#clock{font-size:clamp(46px,6.4vw,76px);line-height:.95;letter-spacing:1px;text-shadow:0 0 14px rgba(94,242,255,.35),0 2px 0 rgba(0,0,0,.6)}
+#place{font-family:var(--mono);font-size:13px;color:var(--dim);margin-top:12px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+#place .tagm{color:var(--acc2);border:1px solid rgba(255,79,216,.4);padding:0 5px;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+#place .mood{color:var(--acc2);opacity:.85}
+#wcard{pointer-events:auto;position:relative;margin-top:14px;background:var(--card);border:1px solid var(--line);backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);font-family:var(--mono);font-size:13px;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#wcard::before{content:"";position:absolute;left:0;top:0;width:calc(100% - 16px);height:2px;background:linear-gradient(90deg,var(--acc),var(--acc2) 70%,transparent)}
+#simChip{display:flex;align-items:center;gap:8px;margin:12px 16px 0;padding:4px 8px;font-size:11.5px;color:#ffd2f5;background:rgba(255,79,216,.1);border:1px dashed rgba(255,79,216,.45)}
+#simChip[hidden]{display:none}
+#simChip b{font-weight:600}
+#simChip button{margin-left:auto;background:none;border:1px solid rgba(255,79,216,.5);color:#ffd2f5;font:inherit;font-size:11px;padding:1px 7px;cursor:pointer}
+#simChip button:hover{background:rgba(255,79,216,.18)}
+.wnow{display:flex;gap:14px;align-items:center;padding:14px 16px 10px;cursor:pointer;user-select:none;-webkit-user-select:none}
+#wIcon{width:60px;height:60px;image-rendering:pixelated;flex:none;filter:drop-shadow(0 0 10px rgba(180,170,255,.25))}
+.wmain{flex:1;min-width:0}
+.wtop{display:flex;align-items:baseline;gap:10px}
+#wTemp{font-family:"VT323",monospace;font-size:62px;line-height:.75;letter-spacing:-1px}
+#wCond{font-size:15px;font-weight:500;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+#wFeel{font-size:12px;color:var(--dim);margin-top:6px}
+#wFeel b{color:var(--fg);font-weight:500}
+#wFeel .hi{color:#ffcf8a}#wFeel .lo{color:#8fd8ff}
+.chev{width:22px;height:22px;flex:none;color:var(--dim);transition:transform .3s;align-self:flex-start;margin-top:2px}
+#wcard.collapsed .chev{transform:rotate(180deg)}
+#wCast{margin:0 16px 12px;padding:7px 10px;border-left:2px solid rgba(160,130,255,.5);background:rgba(160,130,255,.07);font-size:12.5px;line-height:1.3}
+#wCast.on{border-left-color:var(--acc);background:rgba(94,242,255,.07);color:#dffbff}
+.wdet{padding:0 16px 14px;display:grid;grid-template-rows:1fr;transition:grid-template-rows .35s ease,opacity .35s}
+.wdet>div{min-height:0;overflow:hidden}
+#wcard.collapsed .wdet{grid-template-rows:0fr;opacity:0;padding-bottom:0}
+#wcard.empty .wdet,#wcard.empty #wCast{display:none}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tile{background:rgba(255,255,255,.035);border:1px solid rgba(160,130,255,.13);padding:7px 8px 6px;min-width:0}
+.tile .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.tile .v{font-family:"VT323",monospace;font-size:26px;line-height:1;margin-top:4px;white-space:nowrap}
+.tile .v small{font-size:15px;color:var(--dim)}
+.tile .s{font-size:10.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px}
+.arr{width:10px;height:10px;fill:var(--acc);flex:none}
+.sec{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin:12px 0 4px}
+.hours{display:flex;gap:2px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:rgba(160,130,255,.35) transparent;-webkit-overflow-scrolling:touch}
+.hours::-webkit-scrollbar{height:4px}.hours::-webkit-scrollbar-thumb{background:rgba(160,130,255,.35)}
+.hr{flex:0 0 44px;text-align:center;scroll-snap-align:start;padding:5px 0 4px;border:1px solid transparent}
+.hr.now{border-color:rgba(94,242,255,.35);background:rgba(94,242,255,.06)}
+.hr .h{font-size:10.5px;color:var(--dim)}
+.hr.now .h{color:var(--acc)}
+.hr img{width:32px;height:32px;image-rendering:pixelated;display:block;margin:3px auto 1px}
+.hr .t{font-family:"VT323",monospace;font-size:20px;line-height:1}
+.hr .p{font-size:9.5px;color:#8fe0ff;height:12px;margin-top:1px}
+.hr .bar{height:2px;background:rgba(143,224,255,.13);margin:2px 7px 0}.hr .bar i{display:block;height:100%;background:#8fe0ff}
+.sunrow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:10px;font-size:11.5px;color:var(--dim)}
+.sunrow b{color:var(--fg);font-weight:500}
+.sunbar{position:relative;height:16px}
+.sunbar::before{content:"";position:absolute;left:0;right:0;top:7px;height:2px;background:linear-gradient(90deg,rgba(255,154,60,.6),rgba(255,211,79,.8),rgba(255,154,60,.6))}
+#sunDot{position:absolute;top:3px;width:10px;height:10px;margin-left:-5px;background:#ffd34f;box-shadow:0 0 10px #ffd34f}
+#sunDot.night{background:#cfc6ff;box-shadow:0 0 10px #a99cff}
+#sunMid{position:absolute;left:0;right:0;top:-12px;text-align:center;font-size:10.5px}
+#wFoot{font-size:10.5px;color:var(--dim);opacity:.7;margin-top:10px}
+#btns{z-index:3}
+#panel{z-index:4}
+@media (max-width:640px){
+  #hud{right:max(16px,env(safe-area-inset-right));width:auto}
+  #clock{font-size:52px}
+  #place{max-width:calc(100vw - 190px)}
+  #wcard{position:fixed;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));margin:0;max-height:calc(100dvh - 140px);overflow-y:auto;overscroll-behavior:contain}
+  #wIcon{width:52px;height:52px}
+  #wTemp{font-size:54px}
+  .wnow{padding:12px 14px 8px}
+  #wCast{margin:0 14px 10px}
+  .wdet{padding:0 14px 12px}
+  .tile .v{font-size:23px}
+  #wcard.collapsed #wCast{margin-bottom:12px}
+}
+@media (max-width:360px){.tiles{grid-template-columns:repeat(2,1fr)}}
 #btns{position:fixed;right:max(18px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px}
 #btns button{width:40px;height:40px;border:1px solid var(--line);background:var(--panel);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #btns button:hover,#btns button[aria-pressed=true]{border-color:var(--acc);color:var(--acc);box-shadow:0 0 12px rgba(94,242,255,.25)}
 #btns svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:square}
-#panel{position:fixed;right:max(18px,env(safe-area-inset-right));top:calc(max(16px,env(safe-area-inset-top)) + 50px);width:min(300px,calc(100vw - 36px));background:var(--panel);border:1px solid var(--line);padding:14px 16px 12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:20px;display:none}
+#panel{position:fixed;right:max(18px,env(safe-area-inset-right));top:calc(max(16px,env(safe-area-inset-top)) + 50px);width:min(300px,calc(100vw - 36px));background:var(--panel);border:1px solid var(--line);padding:14px 16px 12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:20px;display:none;max-height:calc(100dvh - 90px);overflow-y:auto}
 #panel.open{display:block}
 #panel h3{margin:0 0 6px;font-size:16px;font-weight:normal;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
 #panel section{margin-bottom:14px}
@@ -48,7 +113,6 @@ label.chk input{accent-color:var(--acc2)}
 #mh{color:var(--acc)}
 #status,#keys{font-size:15px;color:var(--dim);line-height:1.15}
 #keys{margin-top:6px;opacity:.75}
-@media (max-width:520px){#place,#wx{font-size:19px}}
 </style>
 </head>
 <body>
@@ -58,8 +122,25 @@ label.chk input{accent-color:var(--acc2)}
 <div id="hud" class="ui">
   <div id="clock">--:--</div>
   <div id="place">…</div>
-  <div id="wx">…</div>
-  <div id="tag"></div>
+  <section id="wcard" class="empty" aria-label="Vremea">
+    <div id="simChip" hidden>Scenă simulată: <b id="simName"></b><button id="simLive" type="button">înapoi la live</button></div>
+    <div class="wnow" id="wHead" role="button" tabindex="0" aria-expanded="true">
+      <img id="wIcon" alt="">
+      <div class="wmain">
+        <div class="wtop"><div id="wTemp">--°</div><div id="wCond">Se încarcă vremea…</div></div>
+        <div id="wFeel"></div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 15l6-6 6 6"/></svg>
+    </div>
+    <div id="wCast"></div>
+    <div class="wdet"><div>
+      <div class="tiles" id="wTiles"></div>
+      <div class="sec">Următoarele 24 de ore</div>
+      <div class="hours" id="wHours"></div>
+      <div class="sunrow"><span>↑ <b id="sunRise">--:--</b></span><div class="sunbar"><span id="sunMid"></span><i id="sunDot"></i></div><span>↓ <b id="sunSet">--:--</b></span></div>
+      <div id="wFoot"></div>
+    </div></div>
+  </section>
 </div>
 
 <div id="btns" class="ui">
@@ -83,11 +164,19 @@ label.chk input{accent-color:var(--acc2)}
       <option value="clear">Senin</option>
       <option value="partly">Parțial noros</option>
       <option value="cloudy">Înnorat</option>
-      <option value="fog">Ceață</option>
+      <option value="mist">Pâclă</option>
+      <option value="fog">Ceață densă</option>
       <option value="drizzle">Burniță</option>
       <option value="rain">Ploaie</option>
-      <option value="storm">Furtună</option>
+      <option value="heavy">Ploaie torențială</option>
+      <option value="freezing">Ploaie înghețată (polei)</option>
+      <option value="sleet">Lapoviță</option>
       <option value="snow">Ninsoare</option>
+      <option value="blizzard">Viscol</option>
+      <option value="hail">Furtună cu grindină</option>
+      <option value="storm">Furtună</option>
+      <option value="windy">Vânt puternic</option>
+      <option value="heat">Caniculă</option>
     </select>
   </section>
   <section>
@@ -95,6 +184,7 @@ label.chk input{accent-color:var(--acc2)}
     <form id="cityForm" class="row"><input id="cityIn" type="text" placeholder="Oraș (ex. Tokyo)" autocomplete="off"><button class="btn" type="submit">Caută</button></form>
     <div class="row" style="margin-top:6px"><button id="bGeo" class="btn" type="button" style="flex:1">Folosește locația mea</button></div>
   </section>
+  <section><label class="chk"><input id="aHide" type="checkbox" checked> Ascunde interfața când stai pe loc</label></section>
   <div id="status">Se încarcă vremea…</div>
   <div id="keys">H interfață · S sunet · F ecran complet · D setări</div>
 </div>
@@ -156,46 +246,90 @@ const SKY = {
 };
 
 /* ───────────── vreme ───────────── */
+// Parametrii scenei: cloud, rain, snow, fog, storm, hail, frost (gheață pe geam), cond (geam aburit), heat, wind (semnat, -1.3..1.3), gust
+const SCENE_KEYS = ['cloud', 'rain', 'snow', 'fog', 'storm', 'hail', 'frost', 'cond', 'heat', 'wind', 'gust'];
 const WX = {
-  clear:   { label: 'Senin', word: 'SENIN', cloud: .05, rain: 0, snow: 0, fog: 0, storm: 0 },
-  partly:  { label: 'Parțial noros', word: 'NOROS', cloud: .42, rain: 0, snow: 0, fog: 0, storm: 0 },
-  cloudy:  { label: 'Înnorat', word: 'INNORAT', cloud: .9, rain: 0, snow: 0, fog: 0, storm: 0 },
-  fog:     { label: 'Ceață', word: 'CEATA', cloud: .7, rain: 0, snow: 0, fog: .85, storm: 0 },
-  drizzle: { label: 'Burniță', word: 'BURNITA', cloud: .85, rain: .3, snow: 0, fog: .15, storm: 0 },
-  rain:    { label: 'Ploaie', word: 'PLOAIE', cloud: .95, rain: .7, snow: 0, fog: .1, storm: 0 },
-  storm:   { label: 'Furtună', word: 'FURTUNA', cloud: 1, rain: 1, snow: 0, fog: .1, storm: 1 },
-  snow:    { label: 'Ninsoare', word: 'ZAPADA', cloud: .9, rain: 0, snow: .7, fog: .1, storm: 0 }
+  clear:    { label: 'Senin',              word: 'SENIN',    cloud: .05 },
+  partly:   { label: 'Parțial noros',      word: 'NOROS',    cloud: .42 },
+  cloudy:   { label: 'Înnorat',            word: 'INNORAT',  cloud: .92 },
+  mist:     { label: 'Pâclă',              word: 'PACLA',    cloud: .6,  fog: .35 },
+  fog:      { label: 'Ceață densă',        word: 'CEATA',    cloud: .75, fog: .9, cond: .3 },
+  drizzle:  { label: 'Burniță',            word: 'BURNITA',  cloud: .88, rain: .22, fog: .15, cond: .4 },
+  rain:     { label: 'Ploaie',             word: 'PLOAIE',   cloud: .95, rain: .62, fog: .12, cond: .3 },
+  heavy:    { label: 'Ploaie torențială',  word: 'TORENT',   cloud: 1,   rain: 1, fog: .25, wind: .45, gust: .35, cond: .45 },
+  freezing: { label: 'Ploaie înghețată',   word: 'POLEI',    cloud: .95, rain: .5, fog: .15, frost: .7 },
+  sleet:    { label: 'Lapoviță',           word: 'LAPOVITA', cloud: .95, rain: .4, snow: .4, fog: .15, frost: .3, cond: .3 },
+  snow:     { label: 'Ninsoare',           word: 'ZAPADA',   cloud: .9,  snow: .6, fog: .12, frost: .35 },
+  blizzard: { label: 'Viscol',             word: 'VISCOL',   cloud: 1,   snow: 1, fog: .45, wind: 1.2, gust: .7, frost: .75 },
+  hail:     { label: 'Furtună cu grindină', word: 'GRINDINA', cloud: 1,  rain: .55, hail: 1, storm: 1, wind: .5, gust: .5 },
+  storm:    { label: 'Furtună',            word: 'FURTUNA',  cloud: 1,   rain: 1, storm: 1, fog: .1, wind: .6, gust: .5 },
+  windy:    { label: 'Vânt puternic',      word: 'VANT',     cloud: .5,  wind: 1.25, gust: .8 },
+  heat:     { label: 'Caniculă',           word: 'CANICULA', cloud: .05, heat: 1 }
 };
+const sceneOf = o => { const s = { cloud: 0, rain: 0, snow: 0, fog: 0, storm: 0, hail: 0, frost: 0, cond: 0, heat: 0, wind: .12, gust: .1 }; for (const k of SCENE_KEYS) if (o[k] != null) s[k] = o[k]; s.label = o.label; s.word = o.word; s.key = o.key; return s; };
+for (const k in WX) WX[k].key = k;
 const CODE_LABEL = { 0: 'Senin', 1: 'Predominant senin', 2: 'Parțial noros', 3: 'Înnorat', 45: 'Ceață', 48: 'Ceață cu chiciură',
   51: 'Burniță slabă', 53: 'Burniță', 55: 'Burniță deasă', 56: 'Burniță înghețată', 57: 'Burniță înghețată',
   61: 'Ploaie slabă', 63: 'Ploaie', 65: 'Ploaie puternică', 66: 'Ploaie înghețată', 67: 'Ploaie înghețată',
   71: 'Ninsoare slabă', 73: 'Ninsoare', 75: 'Ninsoare puternică', 77: 'Grăunțe de zăpadă',
-  80: 'Averse slabe', 81: 'Averse', 82: 'Averse puternice', 85: 'Averse de ninsoare', 86: 'Averse de ninsoare',
+  80: 'Averse slabe', 81: 'Averse de ploaie', 82: 'Averse torențiale', 85: 'Averse de ninsoare', 86: 'Averse de ninsoare',
   95: 'Furtună', 96: 'Furtună cu grindină', 99: 'Furtună cu grindină' };
-const INTENS = { 51: .2, 53: .3, 55: .45, 56: .3, 57: .45, 61: .4, 63: .7, 65: 1, 66: .5, 67: .8, 80: .45, 81: .7, 82: 1, 71: .4, 73: .7, 75: 1, 77: .3, 85: .6, 86: 1 };
-function codeToWx(code, cc) {
-  let k = 'clear';
-  if (code === 0) k = 'clear'; else if (code <= 2) k = 'partly'; else if (code === 3) k = 'cloudy';
-  else if (code === 45 || code === 48) k = 'fog';
-  else if (code >= 51 && code <= 57) k = 'drizzle';
-  else if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) k = 'rain';
-  else if ((code >= 71 && code <= 77) || code === 85 || code === 86) k = 'snow';
-  else if (code >= 95) k = 'storm';
-  const w = { ...WX[k] };
-  if (k === 'rain' || k === 'drizzle') w.rain = INTENS[code] ?? w.rain;
-  if (k === 'snow') w.snow = INTENS[code] ?? w.snow;
-  if (cc != null && (k === 'clear' || k === 'partly' || k === 'cloudy')) w.cloud = clamp(cc / 100 * .95);
-  w.label = CODE_LABEL[code] || w.label;
-  return w;
+const INTENS = { 51: .15, 53: .22, 55: .32, 56: .25, 57: .35, 61: .38, 63: .62, 65: 1, 66: .45, 67: .75, 80: .4, 81: .65, 82: 1, 71: .35, 73: .6, 75: 1, 77: .3, 85: .55, 86: .95 };
+const isRainCode = c => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
+const isSnowCode = c => (c >= 71 && c <= 77) || c === 85 || c === 86;
+function codeKind(c) {
+  if (c === 0) return 'clear'; if (c <= 2) return 'partly'; if (c === 3) return 'cloudy';
+  if (c === 45 || c === 48) return 'fog';
+  if (c >= 51 && c <= 55) return 'drizzle'; if (c === 56 || c === 57 || c === 66 || c === 67) return 'freezing';
+  if (c === 65 || c === 82) return 'heavy'; if (isRainCode(c) && c < 95) return 'rain';
+  if (isSnowCode(c)) return 'snow'; if (c === 96 || c === 99) return 'hail'; if (c >= 95) return 'storm';
+  return 'cloudy';
+}
+// Transformă măsurătorile reale în parametri de scenă (intensități continue, nu doar codul WMO)
+function deriveScene(w) {
+  const c = w.code, liq = w.rainH + w.showersH, sn = w.snowH;
+  let rain = liq > .02 ? clamp(Math.pow(liq / 7, .55)) : 0;
+  let snow = sn > .01 ? clamp(Math.pow(sn / 2.5, .55)) : 0;
+  if (isRainCode(c) && !isSnowCode(c) && rain < .15) rain = Math.max(rain, (INTENS[c] ?? .45) * .75);
+  if (isSnowCode(c) && snow < .15) snow = Math.max(snow, (INTENS[c] ?? .5) * .75);
+  if (c >= 51 && c <= 57) rain = Math.min(rain, .35);
+  const v = w.vis;
+  let fog = v == null ? 0 : v < 200 ? 1 : v < 500 ? .85 : v < 1000 ? .7 : v < 2000 ? .45 : v < 5000 ? .25 : v < 10000 ? .1 : 0;
+  if (c === 45 || c === 48) fog = Math.max(fog, .7);
+  if (rain || snow) fog = Math.max(fog, .06 + (rain + snow) * .12);
+  let cloud = clamp(w.cc / 100);
+  if (rain || snow) cloud = Math.max(cloud, .85);
+  const storm = c >= 95 ? 1 : 0, hail = (c === 96 || c === 99) ? 1 : 0;
+  const freezing = c === 56 || c === 57 || c === 66 || c === 67 || (w.temp <= 0 && rain > 0 && !snow);
+  const frost = w.temp <= -1 ? clamp(-w.temp / 10 + .3, 0, .85) : freezing ? .6 : snow ? .25 : 0;
+  const cond = w.hum >= 85 && w.temp < 15 ? clamp((w.hum - 85) / 12) * .9 : 0;
+  const wind = clamp(-Math.sin(w.dir * Math.PI / 180) * w.wind / 35, -1.3, 1.3);
+  const gust = clamp((w.gust - w.wind) / Math.max(w.wind, 6), 0, 1.5) * .5;
+  const heat = w.temp >= 30 ? clamp((w.temp - 29) / 8) : 0;
+  let key;
+  if (storm) key = hail ? 'hail' : 'storm';
+  else if (freezing && rain) key = 'freezing';
+  else if (rain && snow) key = 'sleet';
+  else if (snow) key = (w.wind >= 35 || w.gust >= 55) ? 'blizzard' : 'snow';
+  else if (rain) key = (c >= 51 && c <= 57) ? 'drizzle' : (liq >= 4 || c === 65 || c === 82) ? 'heavy' : 'rain';
+  else if (fog >= .65) key = 'fog';
+  else if (fog >= .2) key = 'mist';
+  else if (w.wind >= 38 || w.gust >= 60) key = 'windy';
+  else if (heat > 0 && cloud < .5) key = 'heat';
+  else key = cloud < .2 ? 'clear' : cloud < .7 ? 'partly' : 'cloudy';
+  const derived = ['sleet', 'blizzard', 'windy', 'mist', 'heat'].includes(key) || (key === 'freezing' && !CODE_LABEL[c]?.includes('înghețat'));
+  const label = derived ? WX[key].label : (CODE_LABEL[c] || WX[key].label);
+  return sceneOf({ key, label, word: WX[key].word, cloud, rain, snow, fog, storm, hail, frost, cond, heat, wind, gust: Math.max(gust, key === 'blizzard' ? .6 : 0) });
 }
 
 /* ───────────── stare ───────────── */
 const ST = {
   lat: 45.4353, lon: 28.0080, place: 'Galați', utcOffset: null,
-  temp: null, code: null, cc: null, sunrise: 7, sunset: 18.5, wind: .15, windSpd: 8,
-  live: null, updated: null, err: false,
+  temp: null, sunrise: 7, sunset: 18.5,
+  wx: null, live: null, updated: null, err: false,
   timeMode: 'live', manualH: 22, timelapse: P.has('timelapse'),
   wxMode: WX[P.get('weather')] ? P.get('weather') : 'live',
+  autoHide: store.get('nn-autohide') !== false,
   seed: parseInt(P.get('seed')) || 20771
 };
 if (P.get('time')) { const m = /^(\d{1,2})(?::(\d{2}))?$/.exec(P.get('time')); if (m) { ST.timeMode = 'manual'; ST.manualH = (+m[1] % 24) + (+(m[2] || 0)) / 60; } }
@@ -207,13 +341,14 @@ function liveHour() {
   return d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600 + d.getUTCMilliseconds() / 3.6e6;
 }
 const hourNow = () => ST.timeMode === 'live' ? liveHour() : ST.manualH;
+const SCENE_CACHE = {};
 function targetWx() {
-  if (ST.wxMode !== 'live') return WX[ST.wxMode];
+  if (ST.wxMode !== 'live') return SCENE_CACHE[ST.wxMode] || (SCENE_CACHE[ST.wxMode] = sceneOf(WX[ST.wxMode]));
   if (ST.live) return ST.live;
-  return WX.clear;
+  return SCENE_CACHE.clear || (SCENE_CACHE.clear = sceneOf(WX.clear));
 }
-const cur = { cloud: .05, rain: 0, snow: 0, fog: 0, storm: 0, wind: .15 };
-{ const t = targetWx(); Object.assign(cur, { cloud: t.cloud, rain: t.rain, snow: t.snow, fog: t.fog, storm: t.storm }); }
+const cur = {};
+{ const t = targetWx(); for (const k of SCENE_KEYS) cur[k] = t[k]; }
 
 function traffic(h) {
   const d = [.3, .2, .12, .09, .11, .22, .5, .8, .9, .75, .7, .7, .75, .7, .7, .75, .85, 1, 1, .95, .85, .7, .55, .4];
@@ -227,8 +362,8 @@ const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let W = 0, H = 0, K = 3;
 const M = 24; // margine pentru parallax
 let scene, sc, glow, gl, g2, g2c, g4, g4c, g8, g8c;
-let layers = [], stars = [], lanes = [], beams = [], cars = [], rain = [], snow = [], drops = [], steam = [];
-let cloudTex, cloudTint, cloudTintC, fgMask, fgMaskC, fg, fgC, tmp, tmpC;
+let layers = [], stars = [], lanes = [], beams = [], cars = [], rain = [], snow = [], drops = [], steam = [], hail = [], debris = [];
+let cloudTex, cloudTint, cloudTintC, fgMask, fgMaskC, fg, fgC, tmp, tmpC, frostTex;
 let FG = {}, BB = null, ship = null;
 
 const LAYERS = [
@@ -317,7 +452,7 @@ function genWorld() {
 
   genClouds(R);
   genFg(R);
-  rain = []; snow = []; drops = []; steam = [];
+  rain = []; snow = []; drops = []; steam = []; hail = []; debris = [];
   ship = null; shipTimer = 4;
   if (W > 160) spawnShip(R() < .5 ? 1 : -1, W * (.35 + R() * .3));
 }
@@ -451,7 +586,41 @@ function genFg(R) {
   ell(cx, sillY - Q(4), Q(8), Q(5)); ell(cx, sillY - Q(8), Q(6), Q(6)); ell(cx, sillY - Q(15), Q(4.2), Q(4));
   const ear = s => { for (let i = 0; i < Q(4); i++) { const w = Math.max(1, Q(3) - Math.floor(i * Q(3) / Q(4))); m.fillRect(s < 0 ? cx - Q(4) : cx + Q(4) - w + 1, sillY - Q(18) - i, w, 1); } };
   ear(-1); ear(1);
+  genFrost(R, twoPanes ? [[F, F, mx - F, sillY - F], [mx + mw, F, W - F - mx - mw, sillY - F]] : [[F, F, W - 2 * F, sillY - F]], q);
   FG = { F, sillH, sillY, mx, mw, plX, mugX, mugW: mw2, mugH: mh2, cx, q, panes: twoPanes ? [[F, F, mx - F, sillY - F], [mx + mw, F, W - F - mx - mw, sillY - F]] : [[F, F, W - 2 * F, sillY - F]] };
+}
+
+/* chiciură pe geam: cristale care cresc din colțuri și margini */
+function genFrost(R, panes, q) {
+  let fx; [frostTex, fx] = mk(W, H);
+  const img = fx.createImageData(W, H), d = img.data;
+  for (const [px, py, pw, ph] of panes) {
+    for (let y = py; y < py + ph; y++) for (let x = px; x < px + pw; x++) {
+      const e = Math.min(x - px, px + pw - 1 - x, y - py, (py + ph - 1 - y) * .7);
+      const cx = Math.min(x - px, px + pw - 1 - x), cy = Math.min(y - py, py + ph - 1 - y);
+      const corner = Math.hypot(cx, cy);
+      const p = Math.exp(-e / (4.5 * q)) * .9 + Math.exp(-corner / (16 * q)) * .7;
+      if (R() < p * (.55 + .45 * Math.sin(x * .9 + y * 1.7) * Math.sin(x * .37 - y * .53))) {
+        const i = (y * W + x) * 4, a = 90 + R() * 150;
+        d[i] = 215 + R() * 30; d[i + 1] = 232 + R() * 20; d[i + 2] = 255; d[i + 3] = a * clamp(p + .2);
+      }
+    }
+    // ramuri de cristal
+    for (let k = 0; k < Math.round((pw + ph) / 9); k++) {
+      const side = Math.floor(R() * 4);
+      let x = side === 0 ? px : side === 1 ? px + pw - 1 : px + R() * pw, y = side === 2 ? py : side === 3 ? py + ph - 1 : py + R() * ph;
+      let a = side === 0 ? 0 : side === 1 ? Math.PI : side === 2 ? Math.PI / 2 : -Math.PI / 2;
+      a += (R() - .5) * 1.2;
+      const len = (4 + R() * 11) * q;
+      for (let s = 0; s < len; s++) {
+        x += Math.cos(a); y += Math.sin(a); a += (R() - .5) * .5;
+        const xi = Math.round(x), yi = Math.round(y);
+        if (xi < px || xi >= px + pw || yi < py || yi >= py + ph) break;
+        const i = (yi * W + xi) * 4; d[i] = 235; d[i + 1] = 245; d[i + 2] = 255; d[i + 3] = 150 * (1 - s / len) + 30;
+      }
+    }
+  }
+  fx.putImageData(img, 0, 0);
 }
 
 /* ───────────── mediu (culori + lumină) pe cadru ───────────── */
@@ -466,6 +635,7 @@ function computeEnv(t) {
   top = mix(top, SKY.tw.top, twk * .55); mid = mix(mid, SKY.tw.mid, twk * .8); hor = mix(hor, SKY.tw.hor, twk);
   const ovk = W_.cloud * .82;
   top = mix(top, mix(SKY.ovN.top, SKY.ovD.top, day), ovk); mid = mix(mid, mix(SKY.ovN.mid, SKY.ovD.mid, day), ovk); hor = mix(hor, mix(SKY.ovN.hor, SKY.ovD.hor, day), ovk);
+  if (W_.heat > 0) { const hk = W_.heat * (.3 + .35 * day); hor = mix(hor, hex('#ffb066'), hk); mid = mix(mid, hex('#e9b58c'), hk * .7); top = mix(top, hex('#7aa2c9'), W_.heat * day * .2); }
   const fogc = mix(SKY.fogN, SKY.fogD, day);
   top = mix(top, fogc, W_.fog * .45); mid = mix(mid, fogc, W_.fog * .7); hor = mix(hor, fogc, W_.fog * .8);
   if (W_.storm > 0) { const k = 1 - W_.storm * .3 * day; top = top.map(v => v * k); mid = mid.map(v => v * k); hor = hor.map(v => v * k); }
@@ -477,7 +647,8 @@ function computeEnv(t) {
   cloudCol = mix(cloudCol, fogc, W_.fog * .5);
   const fogVeil = mix(mix(fogc, hor, .5), [150, 125, 175], .3 * (1 - day));
   return { h, sr, ss, day, tw, n: 1 - day, top, mid, hor, rim, cloudCol, fogc, fogVeil,
-    cloud: W_.cloud, rain: W_.rain, snow: W_.snow, fog: W_.fog, storm: W_.storm, wind: W_.wind };
+    cloud: W_.cloud, rain: W_.rain, snow: W_.snow, fog: W_.fog, storm: W_.storm, wind: W_.wind * gustF,
+    hail: W_.hail, frost: W_.frost, cond: W_.cond, heat: W_.heat, gust: W_.gust };
 }
 
 function isLit(w, h, E) {
@@ -601,7 +772,24 @@ function update(dt, Ev, t) {
   const wantS = Math.round(Ev.snow * W * .9);
   while (snow.length < wantS) snow.push(newFlake(true));
   if (snow.length > wantS) snow.length = wantS;
-  for (const f of snow) { f.y += f.v * dt; f.x += (Ev.wind * 10 + Math.sin(t * f.f + f.p) * 6) * dt * f.z; if (f.y > H) Object.assign(f, newFlake(false)); if (f.x < -4) f.x += W + 8; if (f.x > W + 4) f.x -= W + 8; }
+  for (const f of snow) { f.y += f.v * dt; f.x += (Ev.wind * 38 + Math.sin(t * f.f + f.p) * 6) * dt * f.z; if (f.y > H) Object.assign(f, newFlake(false)); if (f.x < -4) f.x += W + 8; if (f.x > W + 4) f.x -= W + 8; }
+  // grindină
+  const wantH = Math.round(Ev.hail * W * .45);
+  while (hail.length < wantH) hail.push({ x: Math.random() * (W + 20) - 10, y: Math.random() * H, v: 300 + Math.random() * 120, s: Math.random() < .3 ? 2 : 1 });
+  if (hail.length > wantH) hail.length = wantH;
+  for (const g of hail) { g.y += g.v * dt; g.x += Ev.wind * g.v * .2 * dt; if (g.y > H) { g.y = -Math.random() * 20; g.x = Math.random() * (W + 20) - 10; } }
+  if (Ev.hail > .2 && Math.random() < Ev.hail * dt * 10) {
+    const pane = FG.panes[Math.floor(Math.random() * FG.panes.length)];
+    drops.push({ x: pane[0] + 2 + Math.random() * (pane[2] - 4), y: pane[1] + 2 + Math.random() * (pane[3] - 4), s: 1, vy: 0, slide: false, life: .35, age: 0, tick: true });
+  }
+  // resturi purtate de vânt (frunze, hârtii)
+  const wantD = Math.round(clamp(Math.abs(Ev.wind) / gustF - .5) * 50 * (1 - Ev.rain * .5));
+  while (debris.length < wantD) debris.push({ x: Math.random() * W, y: H * (.2 + Math.random() * .7), k: .6 + Math.random() * .8, ph: Math.random() * 6, f: 2 + Math.random() * 4, s: Math.random() < .4 ? 2 : 1, c: Math.random() });
+  if (debris.length > wantD) debris.length = wantD;
+  for (const b of debris) {
+    b.x += Ev.wind * 120 * b.k * dt; b.y += (Math.sin(t * b.f * .5 + b.ph) * 18 + 4) * dt;
+    if (b.x > W + 8 || b.x < -8 || b.y > H || b.y < 0) { b.x = Ev.wind > 0 ? -4 : W + 4; b.y = H * (.2 + Math.random() * .7); }
+  }
   // picături pe geam
   if (Ev.rain > .05 && Math.random() < Ev.rain * dt * 14 && drops.length < 160 * Ev.rain) {
     const pane = FG.panes.length < 2 || Math.random() < (FG.panes[0][2] / (W - 2 * FG.F)) ? FG.panes[0] : FG.panes[1];
@@ -611,7 +799,7 @@ function update(dt, Ev, t) {
     d.age += dt;
     if (d.slide && d.age > 1.5) { d.vy = Math.min(d.vy + dt * 8, 14); d.y += d.vy * dt; d.x += Math.sin(d.age * 3) * .05; }
   }
-  drops = drops.filter(d => d.y < FG.sillY - 1 && d.age < d.life + (Ev.rain > .05 ? 0 : -9999));
+  drops = drops.filter(d => d.y < FG.sillY - 1 && d.age < d.life + (Ev.rain > .05 || d.tick ? 0 : -9999));
   // abur din cană
   const steamy = ST.temp == null ? Ev.n > .5 : (ST.temp < 16 || Ev.n > .6);
   if (steamy && Math.random() < dt * 6) steam.push({ x: FG.mugX + FG.mugW * (.3 + Math.random() * .4), y: FG.sillY - FG.mugH - 1, a: .35, ph: Math.random() * 6 });
@@ -838,11 +1026,12 @@ function drawHaze(Ev, y0, a) {
 function drawRain(Ev, near) {
   if (!rain.length) return;
   const col = mix(Ev.hor, [205, 215, 255], .55);
-  sc.fillStyle = rgba(col, near ? .5 : .28);
+  sc.fillStyle = rgba(col, (near ? .5 : .28) * (.75 + .25 * clamp(Ev.rain * 1.5)));
   const sl = Ev.wind * .3;
   for (const d of rain) {
     if (d.near !== near) continue;
-    for (let i = 0; i < d.l; i++) sc.fillRect(Math.round(d.x - sl * i), Math.round(d.y - i), 1, 1);
+    const ln = Math.max(1, Math.round(d.l * (.45 + .7 * Ev.rain)));
+    for (let i = 0; i < ln; i++) sc.fillRect(Math.round(d.x - sl * i), Math.round(d.y - i), 1, 1);
   }
 }
 function drawSnow(Ev) {
@@ -850,8 +1039,36 @@ function drawSnow(Ev) {
   sc.fillStyle = rgba(mix([235, 235, 250], Ev.hor, .15), .85);
   for (const f of snow) sc.fillRect(Math.round(f.x), Math.round(f.y), f.s, f.s);
 }
+function drawHail(Ev) {
+  if (!hail.length) return;
+  sc.fillStyle = 'rgba(240,246,255,.85)';
+  for (const g of hail) { sc.fillRect(Math.round(g.x), Math.round(g.y), g.s, g.s); sc.fillRect(Math.round(g.x - Ev.wind), Math.round(g.y - 2), 1, 1); }
+}
+function drawDebris(Ev, t) {
+  if (!debris.length) return;
+  const base = layers[2].bc || [20, 15, 30];
+  for (const b of debris) {
+    const flip = Math.sin(t * b.f + b.ph) > 0;
+    const lit = mix(Ev.hor, [255, 220, 200], .35);
+    const col = b.c < .5 ? mix(mix(base, [150, 105, 60], .6), lit, .35 * Ev.n) : mix(mix(base, [225, 215, 205], .6), lit, .4 * Ev.n);
+    sc.fillStyle = rgba(col, .95);
+    sc.fillRect(Math.round(b.x), Math.round(b.y), flip ? b.s + 2 : 1, flip ? 1 : b.s + 1);
+  }
+}
+function drawGlass(Ev) {
+  if (Ev.cond > .02) {
+    for (const [px, py, pw, ph] of FG.panes) {
+      const g = sc.createLinearGradient(0, py + ph * .35, 0, py + ph);
+      const c = mix(Ev.hor, [210, 215, 235], .6);
+      g.addColorStop(0, rgba(c, 0)); g.addColorStop(1, rgba(c, .26 * Ev.cond));
+      sc.fillStyle = g; sc.fillRect(px, py + ph * .35, pw, ph * .65);
+    }
+  }
+  if (Ev.frost > .02) { sc.globalAlpha = clamp(Ev.frost); sc.drawImage(frostTex, 0, 0); sc.globalAlpha = 1; }
+}
 function drawDrops(Ev) {
   for (const d of drops) {
+    if (d.tick) { const a = 1 - d.age / d.life; sc.fillStyle = `rgba(245,250,255,${.9 * a})`; sc.fillRect(Math.round(d.x), Math.round(d.y), 1, 1); sc.fillStyle = `rgba(245,250,255,${.35 * a})`; sc.fillRect(Math.round(d.x) - 1, Math.round(d.y), 3, 1); sc.fillRect(Math.round(d.x), Math.round(d.y) - 1, 1, 3); continue; }
     const a = clamp(Math.min(d.age * 2, (d.life - d.age) * .3, 1));
     const x = Math.round(d.x), y = Math.round(d.y);
     sc.fillStyle = `rgba(235,242,255,${.8 * a})`; sc.fillRect(x, y, 1, 1);
@@ -886,7 +1103,7 @@ function render(Ev, t) {
     for (let i = 1; i < bolt.length; i++) { const [x0, y0] = bolt[i - 1], [x1, y1] = bolt[i]; const st = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0; for (let s = 0; s <= st; s++) { const x = Math.round(lerp(x0, x1, s / st)), y = Math.round(lerp(y0, y1, s / st)); sc.fillRect(x, y, 1, 1); gl.fillRect(x - 1, y, 3, 1); } }
   }
   drawLayer(layers[0], Ev, t);
-  drawHaze(Ev, H * .35, .22 + Ev.fog * .45);
+  drawHaze(Ev, H * .35, .22 + Ev.fog * .45 + Ev.heat * .18);
   if (Ev.fog > .05) { sc.fillStyle = rgba(Ev.fogVeil, Ev.fog * .6); sc.fillRect(0, 0, W, H); gl.fillStyle = `rgba(0,0,0,${Ev.fog * .55})`; gl.globalCompositeOperation = 'destination-out'; gl.fillRect(0, 0, W, H); gl.globalCompositeOperation = 'source-over'; }
   drawCars(Ev, t, 0, .5);
   drawRain(Ev, false);
@@ -897,9 +1114,12 @@ function render(Ev, t) {
   drawLayer(layers[2], Ev, t);
   if (Ev.fog > .05) { drawHaze(Ev, H * .55, Ev.fog * .3); sc.fillStyle = rgba(Ev.fogVeil, Ev.fog * .32); sc.fillRect(0, 0, W, H); }
   drawRain(Ev, true);
+  drawHail(Ev);
   drawSnow(Ev);
+  drawDebris(Ev, t);
   if (flash > .02) { sc.fillStyle = `rgba(200,210,255,${flash * .45})`; sc.fillRect(0, 0, W, H); }
   drawDrops(Ev);
+  drawGlass(Ev);
   drawFg(Ev, t);
   if (flash > .02) { sc.fillStyle = `rgba(200,210,255,${flash * .12})`; sc.fillRect(0, 0, W, H); }
   // obiectele din prim-plan blochează strălucirea
@@ -958,8 +1178,8 @@ const Snd = {
   },
   update(Ev) {
     if (!this.ac) return; const t = this.ac.currentTime;
-    this.rainG.gain.setTargetAtTime(Ev.rain * .5, t, 1);
-    this.windG.gain.setTargetAtTime(.03 + Ev.snow * .22 + Ev.fog * .1 + Ev.storm * .15 + Math.abs(Ev.wind) * .06, t, 1.5);
+    this.windG.gain.setTargetAtTime(.03 + Ev.snow * .18 + Ev.fog * .08 + Ev.storm * .12 + Math.abs(Ev.wind) * .22, t, 1.2);
+    this.rainG.gain.setTargetAtTime(Ev.rain * .5 + Ev.hail * .25, t, 1);
     this.humG.gain.setTargetAtTime(.1 + .16 * traffic(Ev.h), t, 2);
   },
   thunder(delay) {
@@ -975,22 +1195,53 @@ const Snd = {
 /* ───────────── date live ───────────── */
 const $ = id => document.getElementById(id);
 const parseH = s => { const m = /T(\d{2}):(\d{2})/.exec(s || ''); return m ? +m[1] + m[2] / 60 : null; };
+async function fetchJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(r.status); return r.json(); }
+let loading = false;
 async function loadWeather() {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${ST.lat.toFixed(4)}&longitude=${ST.lon.toFixed(4)}` +
-    `&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
+  if (loading) return; loading = true;
+  const base = `https://api.open-meteo.com/v1/forecast?latitude=${ST.lat.toFixed(4)}&longitude=${ST.lon.toFixed(4)}&timezone=auto&forecast_days=2&wind_speed_unit=kmh`;
+  const curFull = 'temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m';
+  const curMin = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m';
+  const hourly = 'temperature_2m,weather_code,precipitation_probability,precipitation,visibility,uv_index,is_day';
+  const daily = 'sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum';
+  const tries = [
+    `${base}&current=${curFull}&hourly=${hourly}&daily=${daily}&minutely_15=precipitation,snowfall&forecast_minutely_15=16`,
+    `${base}&current=${curFull}&hourly=${hourly}&daily=${daily}`,
+    `${base}&current=${curMin}&hourly=temperature_2m,weather_code,precipitation_probability,is_day&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min`
+  ];
   try {
-    const r = await fetch(url); if (!r.ok) throw new Error(r.status);
-    const j = await r.json(), c = j.current;
+    let j = null, lastErr;
+    for (const u of tries) { try { j = await fetchJSON(u); break; } catch (e) { lastErr = e; } }
+    if (!j) throw lastErr;
+    const c = j.current, iv = c.interval || 900, perH = 3600 / iv;
+    const Hh = j.hourly || {}, Dd = j.daily || {};
+    const nowKey = (c.time || '').slice(0, 13);
+    let hi = (Hh.time || []).findIndex(t => t.startsWith(nowKey)); if (hi < 0) hi = 0;
+    const at = (arr, i) => arr ? arr[i] : null;
+    const w = {
+      time: c.time, temp: c.temperature_2m, feels: c.apparent_temperature, hum: c.relative_humidity_2m, dew: c.dew_point_2m,
+      isDay: c.is_day === 1, precipH: (c.precipitation || 0) * perH, rainH: (c.rain || 0) * perH, showersH: (c.showers || 0) * perH, snowH: (c.snowfall || 0) * perH,
+      code: c.weather_code, cc: c.cloud_cover ?? 0, pressure: c.pressure_msl,
+      wind: c.wind_speed_10m || 0, dir: c.wind_direction_10m || 0, gust: c.wind_gusts_10m || 0,
+      vis: at(Hh.visibility, hi), uv: at(Hh.uv_index, hi),
+      uvMax: at(Dd.uv_index_max, 0), tmax: at(Dd.temperature_2m_max, 0), tmin: at(Dd.temperature_2m_min, 0), psum: at(Dd.precipitation_sum, 0),
+      hours: (Hh.time || []).slice(hi, hi + 25).map((t, i) => ({ h: t.slice(11, 13), code: Hh.weather_code[hi + i], temp: Hh.temperature_2m[hi + i], pp: at(Hh.precipitation_probability, hi + i), day: at(Hh.is_day, hi + i) !== 0 })),
+      m15: null
+    };
+    if (w.hours[0]) { w.hours[0].temp = w.temp; w.hours[0].code = w.code; w.hours[0].day = w.isDay; }
+    if (j.minutely_15 && j.minutely_15.time) {
+      const M15 = j.minutely_15; let s = M15.time.findIndex(t => t >= (c.time || '')); if (s < 0) s = 0;
+      w.m15 = M15.time.slice(s, s + 12).map((t, i) => (M15.precipitation?.[s + i] || 0) + (M15.snowfall?.[s + i] || 0) * 7);
+    }
     ST.utcOffset = j.utc_offset_seconds;
-    ST.temp = c.temperature_2m; ST.code = c.weather_code; ST.cc = c.cloud_cover;
-    const sr = parseH(j.daily?.sunrise?.[0]), ss = parseH(j.daily?.sunset?.[0]);
+    ST.temp = w.temp;
+    const sr = parseH(at(Dd.sunrise, 0)), ss = parseH(at(Dd.sunset, 0));
     if (sr != null && ss != null && ss > sr) { ST.sunrise = sr; ST.sunset = ss; }
-    const rad = (c.wind_direction_10m || 0) * Math.PI / 180, spd = c.wind_speed_10m || 0;
-    ST.wind = clamp(-Math.sin(rad) * spd / 30, -1, 1); ST.windSpd = spd;
-    ST.live = codeToWx(ST.code, ST.cc); ST.live.wind = ST.wind;
-    ST.updated = new Date(); ST.err = false;
+    ST.wx = w; ST.live = deriveScene(w);
+    ST.updated = Date.now(); ST.err = false;
   } catch (e) { ST.err = true; }
-  updateHud(true);
+  loading = false;
+  renderCard(); updateHud(true);
 }
 async function geocode(name) {
   try {
@@ -1025,29 +1276,165 @@ async function initLocation() {
   await loadWeather();
 }
 
+/* ───────────── iconițe pixel (generate) ───────────── */
+const ICONS = {};
+function iconURL(kind, night) {
+  const key = kind + (night ? 'n' : 'd'); if (ICONS[key]) return ICONS[key];
+  const [c, x] = mk(16, 16);
+  const fill = (f, col) => { x.fillStyle = col; for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) if (f(i + .5, j + .5)) x.fillRect(i, j, 1, 1); };
+  const px = (pts, col) => { x.fillStyle = col; for (const [a, b] of pts) x.fillRect(a, b, 1, 1); };
+  const disc = (cx, cy, r) => (X, Y) => (X - cx) ** 2 + (Y - cy) ** 2 <= r * r;
+  const sun = (cx, cy, r, col = '#ffd34f') => {
+    const rays = []; for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; for (const d of [r + 1.6, r + 2.6]) rays.push([Math.round(cx - .5 + Math.cos(a) * d), Math.round(cy - .5 + Math.sin(a) * d)]); }
+    px(rays, col); fill(disc(cx, cy, r), col); fill((X, Y) => disc(cx, cy, r)(X, Y) && !disc(cx + .8, cy + .8, r)(X, Y), '#fff2b8');
+  };
+  const moon = (cx, cy, r) => { fill((X, Y) => disc(cx, cy, r)(X, Y) && !disc(cx + r * .62, cy - r * .5, r * .82)(X, Y), '#efe6ff'); };
+  const cloudF = (ox, oy) => (X, Y) => disc(ox + 4, oy + 5.2, 2.7)(X, Y) || disc(ox + 7.8, oy + 3.8, 3.7)(X, Y) || disc(ox + 11.3, oy + 5.6, 2.5)(X, Y) || (X >= ox + 3 && X <= ox + 12.8 && Y >= oy + 5.2 && Y <= oy + 8.2);
+  const cloud = (ox, oy, col = '#d4cff0', sh = '#8f88bb') => { const f = cloudF(ox, oy); fill(f, col); fill((X, Y) => f(X, Y) && !f(X, Y + 1.3), sh); fill((X, Y) => f(X, Y) && !f(X, Y - 1.1) && !f(X - 1.1, Y), '#ffffff'); };
+  const drops = (pts, col = '#5ef2ff', len = 2) => { const a = []; for (const [p, q] of pts) for (let i = 0; i < len; i++) a.push([p - i, q + i]); px(a, col); };
+  const flakes = pts => { const a = []; for (const [p, q] of pts) a.push([p, q], [p - 1, q], [p + 1, q], [p, q - 1], [p, q + 1]); px(a, '#ffffff'); };
+  const lines = (rows, col = '#b9b2d6') => { x.fillStyle = col; for (const [a, b, l] of rows) x.fillRect(a, b, l, 1); };
+  const stars = () => px([[2, 3], [13, 2], [12, 6]], '#c9c0ff');
+  switch (kind) {
+    case 'clear': night ? (moon(8, 8, 4.6), stars()) : sun(8, 8, 3.4); break;
+    case 'heat': sun(8, 8, 4, '#ff9a3c'); lines([[3, 15, 3], [9, 15, 4]], '#ff6a3c'); break;
+    case 'partly': night ? moon(5.5, 5.5, 3.2) : sun(5.5, 5.5, 2.6); cloud(2, 5); break;
+    case 'cloudy': cloud(-1, 0, '#8f88bb', '#615a8c'); cloud(2, 5); break;
+    case 'mist': night ? moon(5.5, 4.5, 3) : sun(5.5, 4.5, 2.4); lines([[2, 9, 11], [4, 11, 10], [1, 13, 9], [6, 15, 8]]); break;
+    case 'fog': lines([[1, 3, 12], [3, 6, 12], [0, 9, 13], [2, 12, 12], [4, 15, 9]]); break;
+    case 'drizzle': cloud(1, 0); px([[4, 12], [8, 13], [12, 12], [6, 15]], '#5ef2ff'); break;
+    case 'rain': cloud(1, 0); drops([[5, 11], [9, 12], [13, 11], [7, 14]]); break;
+    case 'heavy': cloud(1, 0, '#a8a1cf', '#5d5688'); drops([[4, 10], [7, 11], [10, 10], [13, 11], [6, 13], [12, 13]], '#5ef2ff', 3); break;
+    case 'freezing': cloud(1, 0); drops([[5, 11], [11, 11]]); flakes([[8, 13]]); px([[3, 15], [13, 14]], '#bff4ff'); break;
+    case 'sleet': cloud(1, 0); drops([[5, 11], [12, 12]]); flakes([[9, 12], [5, 14]]); break;
+    case 'snow': cloud(1, 0); flakes([[4, 12], [9, 11], [13, 13], [7, 14]]); break;
+    case 'blizzard': lines([[0, 3, 9], [3, 6, 12], [1, 13, 7]], '#9fe9ff'); flakes([[12, 3], [6, 10], [11, 11], [3, 9]]); break;
+    case 'hail': cloud(1, 0, '#a8a1cf', '#5d5688'); x.fillStyle = '#ffffff'; for (const [a, b] of [[4, 11], [9, 12], [13, 11], [7, 14]]) x.fillRect(a, b, 2, 2); break;
+    case 'storm': cloud(1, 0, '#a8a1cf', '#5d5688'); px([[9, 9], [8, 10], [7, 11], [8, 11], [9, 11], [8, 12], [7, 13], [6, 14]], '#ffd34f'); drops([[4, 11], [13, 11]]); break;
+    case 'windy': lines([[0, 4, 10], [2, 8, 12], [0, 12, 9]], '#9fe9ff'); px([[10, 3], [11, 2], [12, 3], [14, 7], [15, 8], [14, 9], [9, 11], [10, 11], [10, 12]], '#9fe9ff'); break;
+    default: cloud(1, 3);
+  }
+  return (ICONS[key] = c.toDataURL());
+}
+
+/* ───────────── card meteo ───────────── */
+const r0 = v => v == null || isNaN(v) ? '–' : Math.round(v);
+const compass = d => ['N', 'NE', 'E', 'SE', 'S', 'SV', 'V', 'NV'][Math.round((((d % 360) + 360) % 360) / 45) % 8];
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+function nowcast(w) {
+  const snowy = w.temp != null && w.temp <= 1;
+  const noun = snowy ? 'Ninsoarea' : 'Ploaia', verb = snowy ? 'să ningă' : 'să plouă';
+  const falling = w.precipH > .08 || (isRainCode(w.code) || isSnowCode(w.code));
+  if (w.m15 && w.m15.length) {
+    const a = w.m15;
+    if (falling) {
+      const k = a.findIndex(v => v < .03);
+      if (k === -1) return { t: `${noun} continuă cel puțin ${a.length / 4} ore`, on: true };
+      if (k === 0) return { t: `${noun} se oprește în curând`, on: true };
+      return { t: `${noun} se oprește în ~${k * 15} min`, on: true };
+    }
+    const k = a.findIndex(v => v >= .05);
+    if (k === 0) return { t: `Începe ${verb} în curând`, on: true };
+    if (k > 0) return { t: `Începe ${verb} în ~${k * 15} min`, on: true };
+  }
+  const nx = (w.hours || []).slice(1, 9);
+  if (!falling) {
+    const i = nx.findIndex(h => h.pp != null && h.pp >= 50);
+    if (i >= 0) return { t: `Șanse de precipitații ${nx[i].pp}% în jurul orei ${nx[i].h}:00`, on: false };
+    return { t: 'Fără precipitații în următoarele ore', on: false };
+  }
+  return { t: `${snowy ? 'Ninge' : 'Plouă'} acum · ${w.precipH.toFixed(1)} mm/h`, on: true };
+}
+const visTxt = v => v == null ? ['–', ''] : v >= 10000 ? [(v / 1000).toFixed(0) + ' km', 'foarte bună'] : v >= 4000 ? [(v / 1000).toFixed(1) + ' km', 'bună'] : v >= 1000 ? [(v / 1000).toFixed(1) + ' km', 'redusă'] : [Math.round(v) + ' m', 'ceață'];
+const uvTxt = u => u == null ? '' : u < 3 ? 'scăzut' : u < 6 ? 'moderat' : u < 8 ? 'ridicat' : u < 11 ? 'foarte ridicat' : 'extrem';
+const presTxt = p => p == null ? '' : p < 1000 ? 'scăzută' : p > 1022 ? 'ridicată' : 'normală';
+const tile = (k, v, s) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s || '&nbsp;'}</div></div>`;
+let cardSig = '';
+function renderCard() {
+  const w = ST.wx, card = $('wcard');
+  const sim = ST.wxMode !== 'live';
+  $('simChip').hidden = !sim;
+  if (sim) $('simName').textContent = WX[ST.wxMode].label;
+  if (!w) {
+    card.classList.add('empty');
+    $('wIcon').src = iconURL(sim ? ST.wxMode : 'cloudy', ST.wxMode === 'live' ? false : (E ? E.day < .5 : true));
+    $('wTemp').textContent = '--°';
+    $('wCond').textContent = ST.err ? 'Vreme indisponibilă' : 'Se încarcă vremea…';
+    $('wFeel').textContent = ST.err ? 'Scena rulează cu vreme simulată' : ST.place;
+    return;
+  }
+  card.classList.remove('empty');
+  const L = ST.live;
+  $('wIcon').src = iconURL(L.key, !w.isDay);
+  $('wIcon').alt = L.label;
+  $('wTemp').textContent = r0(w.temp) + '°';
+  $('wCond').textContent = L.label;
+  $('wFeel').innerHTML = `Se simte ca <b>${r0(w.feels)}°</b> · <span class="hi">↑${r0(w.tmax)}°</span> <span class="lo">↓${r0(w.tmin)}°</span>`;
+  const nc = nowcast(w);
+  $('wCast').textContent = nc.t; $('wCast').classList.toggle('on', nc.on);
+  const [vv, vs] = visTxt(w.vis);
+  const arrow = `<svg class="arr" viewBox="0 0 10 10" style="transform:rotate(${(w.dir + 180) % 360}deg)"><path d="M5 1 L8 8 L5 6.5 L2 8 Z"/></svg>`;
+  $('wTiles').innerHTML =
+    tile('Vânt', `${r0(w.wind)}<small> km/h</small>`, `${arrow}${compass(w.dir)} · rafale ${r0(w.gust)}`.replace('rafale', 'raf.')) +
+    tile('Umiditate', `${r0(w.hum)}<small>%</small>`, w.dew != null ? `rouă ${r0(w.dew)}°` : '') +
+    tile('Precipitații', `${w.precipH < .05 ? '0' : w.precipH.toFixed(1)}<small> mm/h</small>`, w.psum != null ? `azi ${w.psum.toFixed(1)} mm` : '') +
+    tile('Vizibilitate', vv, vs) +
+    tile('Presiune', `${r0(w.pressure)}<small> hPa</small>`, presTxt(w.pressure)) +
+    tile('Indice UV', w.uv != null ? (+w.uv).toFixed(0) : '–', w.uvMax != null ? `${uvTxt(w.uv)} · max ${(+w.uvMax).toFixed(0)}` : uvTxt(w.uv));
+  const sig = w.time + '|' + w.hours.length;
+  if (sig !== cardSig) {
+    cardSig = sig;
+    $('wHours').innerHTML = w.hours.map((h, i) => {
+      const pp = h.pp || 0;
+      return `<div class="hr${i === 0 ? ' now' : ''}"><div class="h">${i === 0 ? 'Acum' : h.h}</div><img src="${iconURL(codeKind(h.code), !h.day)}" alt=""><div class="t">${r0(h.temp)}°</div><div class="p">${pp >= 10 ? pp + '%' : ''}</div><div class="bar"><i style="width:${pp}%"></i></div></div>`;
+    }).join('');
+  }
+  updateSunBar();
+}
+function updateSunBar() {
+  if (!$('sunRise')) return;
+  $('sunRise').textContent = fmtH(ST.sunrise); $('sunSet').textContent = fmtH(ST.sunset);
+  const h = hourNow() % 24, f = (h - ST.sunrise) / (ST.sunset - ST.sunrise);
+  const day = f >= 0 && f <= 1;
+  $('sunDot').style.left = (clamp(f) * 100) + '%';
+  $('sunDot').classList.toggle('night', !day);
+  const left = day ? ST.sunset - h : (h < ST.sunrise ? ST.sunrise - h : ST.sunrise + 24 - h);
+  const m = Math.round(left * 60);
+  $('sunMid').textContent = (day ? 'apus în ' : 'răsărit în ') + (m >= 60 ? `${Math.floor(m / 60)}h ${pad(m % 60)}m` : `${m} min`);
+  if (ST.updated) {
+    const ago = Math.round((Date.now() - ST.updated) / 60000);
+    $('wFoot').textContent = `Open-Meteo · actualizat ${ago < 1 ? 'acum' : `acum ${ago} min`}`;
+  } else $('wFoot').textContent = ST.err ? 'Open-Meteo indisponibil' : 'Open-Meteo';
+}
+
 /* ───────────── interfață ───────────── */
 const sw = $('sw');
 function updateHud(full) {
   const h = hourNow();
   $('clock').textContent = fmtH(h);
   if (!full) return;
-  $('place').textContent = ST.place + (ST.timeMode === 'manual' ? ' · manual' : '');
-  const w = targetWx();
-  const lbl = ST.wxMode === 'live' ? (ST.live ? ST.live.label : 'Vreme indisponibilă') : WX[ST.wxMode].label + ' (simulat)';
-  $('wx').innerHTML = `${lbl}${ST.temp != null ? ` · <b>${Math.round(ST.temp)}°C</b>` : ''}`;
   const hh = h % 24;
-  $('tag').textContent = (hh >= 1 && hh < 5) ? 'orașul doarme' : (hh >= 5 && hh < ST.sunrise) ? 'se trezesc primii' : (hh >= ST.sunset - .5 && hh < ST.sunset + .7) ? 'se aprind luminile' : '';
+  const mood = (hh >= 1 && hh < 5) ? 'orașul doarme' : (hh >= 5 && hh < ST.sunrise) ? 'se trezesc primii' : (hh >= ST.sunset - .5 && hh < ST.sunset + .7) ? 'se aprind luminile' : '';
+  $('place').innerHTML = esc(ST.place) + (ST.timeMode === 'manual' ? ' <span class="tagm">manual</span>' : '') + (mood ? ` <span class="mood">· ${mood}</span>` : '');
   $('status').textContent = ST.err ? 'Nu am putut încărca vremea. Scena rulează cu vreme simulată.' :
-    ST.updated ? `Open-Meteo · actualizat ${pad(ST.updated.getHours())}:${pad(ST.updated.getMinutes())} · răsărit ${fmtH(ST.sunrise)}, apus ${fmtH(ST.sunset)}` : 'Se încarcă vremea…';
+    ST.updated ? `Date: Open-Meteo · răsărit ${fmtH(ST.sunrise)}, apus ${fmtH(ST.sunset)}` : 'Se încarcă vremea…';
   $('tLive').classList.toggle('on', ST.timeMode === 'live'); $('tMan').classList.toggle('on', ST.timeMode === 'manual');
-  $('tLapse').checked = ST.timelapse; $('wSel').value = ST.wxMode;
+  $('tLapse').checked = ST.timelapse; $('wSel').value = ST.wxMode; $('aHide').checked = ST.autoHide;
+  updateSunBar();
 }
 function setManual(h) { ST.timeMode = 'manual'; ST.manualH = h; lastRebuild = -1e9; updateHud(true); }
 $('tLive').onclick = () => { ST.timeMode = 'live'; ST.timelapse = false; lastRebuild = -1e9; updateHud(true); };
 $('tMan').onclick = () => setManual(liveHour());
 $('tSlider').oninput = e => { ST.timelapse = false; setManual(+e.target.value); };
 $('tLapse').onchange = e => { ST.timelapse = e.target.checked; if (ST.timelapse && ST.timeMode === 'live') setManual(liveHour()); updateHud(true); };
-$('wSel').onchange = e => { ST.wxMode = e.target.value; updateHud(true); };
+$('wSel').onchange = e => { ST.wxMode = e.target.value; renderCard(); updateHud(true); };
+$('simLive').onclick = () => { ST.wxMode = 'live'; renderCard(); updateHud(true); };
+$('aHide').onchange = e => { ST.autoHide = e.target.checked; store.set('nn-autohide', ST.autoHide); poke(); };
+const mobileQ = matchMedia('(max-width:640px)');
+function setCollapsed(c) { $('wcard').classList.toggle('collapsed', c); $('wHead').setAttribute('aria-expanded', !c); }
+setCollapsed(mobileQ.matches);
+$('wHead').onclick = () => setCollapsed(!$('wcard').classList.contains('collapsed'));
+$('wHead').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('wHead').click(); } };
 $('cityForm').onsubmit = async e => {
   e.preventDefault(); const v = $('cityIn').value.trim(); if (!v) return;
   $('status').textContent = 'Caut…';
@@ -1073,20 +1460,20 @@ addEventListener('keydown', e => {
   poke();
 });
 let idleT = 0;
-function poke() { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if (!$('panel').classList.contains('open')) document.body.classList.add('idle'); }, 4000); }
+function poke() { document.body.classList.remove('idle'); clearTimeout(idleT); if (!ST.autoHide) return; idleT = setTimeout(() => { if (ST.autoHide && !$('panel').classList.contains('open') && !document.querySelector('#wcard:hover')) document.body.classList.add('idle'); }, mobileQ.matches ? 7000 : 5000); }
 addEventListener('pointermove', e => { parT = (e.clientX / innerWidth - .5) * 2; poke(); });
 addEventListener('pointerdown', poke);
 let rT = 0; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(resize, 150); });
 
 /* ───────────── buclă ───────────── */
-let lastT = performance.now(), T = 0, hudT = 0, sndT = 0;
+let lastT = performance.now(), T = 0, hudT = 0, sndT = 0, cardT = 0, gustF = 1;
 function frame(now) {
   const dt = Math.min(.05, (now - lastT) / 1000); lastT = now; T += dt;
   if (ST.timelapse) { ST.manualH = (ST.manualH + dt * .2) % 24; }
   const tw = targetWx(), k = 1 - Math.exp(-dt * .9);
-  cur.cloud = lerp(cur.cloud, tw.cloud, k); cur.rain = lerp(cur.rain, tw.rain, k); cur.snow = lerp(cur.snow, tw.snow, k);
-  cur.fog = lerp(cur.fog, tw.fog, k); cur.storm = lerp(cur.storm, tw.storm, k);
-  cur.wind = lerp(cur.wind, ST.wxMode === 'live' ? ST.wind : (tw.storm ? .7 : tw.rain ? .25 : .12), k);
+  for (const key of SCENE_KEYS) cur[key] = lerp(cur[key], tw[key], k);
+  // rafale: vântul pulsează peste valoarea medie
+  gustF = 1 + cur.gust * 2.4 * Math.max(0, Math.sin(T * .45)) * Math.max(0, Math.sin(T * 1.7 + .7) * .7 + .3);
   E = computeEnv(T);
   const every = ST.timeMode === 'live' && !ST.timelapse ? 1000 : 110;
   if (now - lastRebuild > every) { rebuild(E); lastRebuild = now; }
@@ -1094,6 +1481,7 @@ function frame(now) {
   render(E, T);
   if (now - hudT > 500) { updateHud(now - hudT > 500); hudT = now; if (ST.timeMode === 'manual') { $('tSlider').value = ST.manualH; $('mh').textContent = fmtH(ST.manualH); } }
   if (now - sndT > 1000) { Snd.update(E); sndT = now; }
+  if (now - cardT > 20000) { updateSunBar(); cardT = now; }
   requestAnimationFrame(frame);
 }
 
@@ -1102,7 +1490,9 @@ updateHud(true);
 poke();
 requestAnimationFrame(frame);
 initLocation();
-setInterval(loadWeather, 15 * 60 * 1000);
+renderCard();
+setInterval(loadWeather, 10 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ST.updated && Date.now() - ST.updated > 10 * 60 * 1000) loadWeather(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) lastT = performance.now(); });
 window.__nn = { ST, get E() { return E; } };
 })();
